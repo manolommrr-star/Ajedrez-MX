@@ -16,6 +16,7 @@ const torneo = ref(null);
 const participantes = ref([]);
 const busqueda = ref('');
 const cargando = ref(true);
+const advertencias = ref([]);
 
 const columnas = ['Jugador', 'FIDE ID', 'Categoría', 'Elo', 'Federación', 'Club', 'Estado'];
 
@@ -36,6 +37,20 @@ async function exportarSwiss() {
     await SwissManagerExport.descargar(props.id, torneo.value ? torneo.value.nombre : props.id);
     notificar('CSV generado (formato propuesto).');
   } catch { notificar('No fue posible generar el CSV.'); }
+}
+
+async function exportarTxtSwiss() {
+  try {
+    const { cuenta, advertencias: avisos } = await SwissManagerExport.descargarTxt(
+      props.id,
+      torneo.value ? torneo.value.nombre : props.id
+    );
+    advertencias.value = avisos;
+    const resumen = avisos.length
+      ? `TXT generado: ${cuenta} jugadores · ${avisos.length} advertencia(s).`
+      : `TXT generado: ${cuenta} jugadores, sin advertencias.`;
+    notificar(resumen);
+  } catch { notificar('No fue posible generar el TXT.'); }
 }
 
 async function exportarCheckin() {
@@ -62,9 +77,18 @@ async function exportarCheckin() {
 
     <form class="filtros-fila" @submit.prevent>
       <input v-model="busqueda" class="control" placeholder="Buscar participante…" />
-      <button type="button" class="boton boton-gris boton-sm" @click="exportarSwiss">Exportar CSV (Swiss-Manager)</button>
+      <button type="button" class="boton boton-verde boton-sm" @click="exportarTxtSwiss">TXT (Swiss Manager)</button>
+      <button type="button" class="boton boton-gris boton-sm" @click="exportarSwiss">Exportar CSV (Excel)</button>
       <button type="button" class="boton boton-gris boton-sm" @click="exportarCheckin">Exportar CSV (check-in)</button>
     </form>
+
+    <div v-if="advertencias.length" class="aviso aviso-dorado">
+      <p>
+        <strong>Advertencias de datos:</strong>
+        {{ advertencias.join(' · ') }}.
+        Puedes completar estos datos en el asistente de importación de Swiss Manager.
+      </p>
+    </div>
 
     <tabla-base :columnas="columnas" :vacia="!filtrados.length" mensaje-vacio="Sin participantes.">
       <tr v-for="p in filtrados" :key="p.id">
