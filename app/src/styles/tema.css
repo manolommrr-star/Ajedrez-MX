@@ -1,0 +1,235 @@
+/* ============================================================
+   AjedrezMX · Tema (inspirado en chess.com)
+   Tokens de diseño + primitivas (botones, campos, tipografía).
+   ============================================================ */
+
+:root {
+  /* Verdes de acción (primario) */
+  --verde: #81b64c;
+  --verde-hover: #a3d160;
+  --verde-oscuro: #6a9a3d;
+  --verde-suave: #edf7e3;
+
+  /* Superficies */
+  --fondo: #f7f6f5;
+  --fondo-2: #e9e8e6;
+  --superficie: #ffffff;
+  --superficie-3: #f4f3f1;
+  --borde: #dbdbdb;
+  --borde-fuerte: #c9c6c2;
+
+  /* Texto */
+  --texto: #312e2b;
+  --texto-suave: #6d6a66;
+  --texto-tenue: #8d8a86;
+
+  /* Acentos */
+  --azul: #3b82c4;
+  --azul-suave: #e8f1f9;
+  --dorado: #d9a441;
+  --dorado-suave: #fdf4e3;
+  --peligro: #e5485d;
+  --peligro-suave: #fdecee;
+  --info: #4a90d9;
+  --info-suave: #eaf2fb;
+
+  /* Forma */
+  --radio: 8px;
+  --radio-sm: 6px;
+  --radio-grande: 12px;
+  --sombra: 0 1px 3px rgba(20, 18, 16, 0.08);
+  --sombra-media: 0 4px 14px rgba(20, 18, 16, 0.12);
+
+  /* Tipografía */
+  --fuente: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --ancho-max: 1200px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--fuente);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--texto);
+  background: var(--fondo);
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; }
+
+a { color: var(--azul); }
+
+button, input, select, textarea { font: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+}
+
+/* ---------- Tipografía ---------- */
+
+.titulo-pagina {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--texto);
+}
+
+.subtitulo-pagina {
+  margin: 0.35rem 0 1.1rem;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.seccion-titulo {
+  margin: 1.6rem 0 0.8rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.texto-suave { color: var(--texto-suave); }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Botones ---------- */
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.05rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+}
+
+.boton:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Primario (verde chess.com) */
+.boton-verde {
+  background: var(--verde);
+  color: #fff;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+}
+.boton-verde:hover:not(:disabled) { background: var(--verde-hover); }
+.boton-verde:active:not(:disabled) { box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.16); }
+
+/* Secundario (gris) */
+.boton-gris {
+  background: var(--fondo-2);
+  color: var(--texto);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.06);
+}
+.boton-gris:hover:not(:disabled) { background: #dfdedb; }
+
+/* Azul (acción alterna) */
+.boton-azul {
+  background: var(--azul);
+  color: #fff;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+}
+.boton-azul:hover:not(:disabled) { background: #4b95d5; }
+
+/* Dorado */
+.boton-dorado {
+  background: var(--dorado);
+  color: #33280f;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14);
+}
+.boton-dorado:hover:not(:disabled) { background: #e6b559; }
+
+/* Borde */
+.boton-borde {
+  background: var(--superficie);
+  border-color: var(--borde-fuerte);
+  color: var(--texto);
+}
+.boton-borde:hover:not(:disabled) { background: var(--superficie-3); }
+
+/* Texto / enlace-botón */
+.boton-texto {
+  background: transparent;
+  color: var(--azul);
+  padding: 0.3rem 0.45rem;
+  box-shadow: none;
+}
+.boton-texto:hover:not(:disabled) { text-decoration: underline; }
+
+.boton-peligro { color: var(--peligro); }
+
+.boton-bloque { width: 100%; }
+.boton-sm { padding: 0.4rem 0.7rem; font-size: 0.82rem; }
+.boton-lg { padding: 0.85rem 1.3rem; font-size: 1.05rem; }
+
+/* ---------- Campos de formulario ---------- */
+
+.campo { display: grid; gap: 0.3rem; min-width: 0; }
+
+.campo-etiqueta {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.control {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio-sm);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.95rem;
+}
+
+.control:focus {
+  outline: none;
+  border-color: var(--verde);
+  box-shadow: 0 0 0 3px rgba(129, 182, 76, 0.25);
+}
+
+textarea.control { min-height: 5.5rem; resize: vertical; }
+
+.campo-fila {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.campo-ayuda { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--texto-suave); }
+
+/* ---------- Tarjetas ---------- */
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 1rem 1.1rem;
+}
+
+.tarjeta-titulo {
+  margin: 0 0 0.7rem;
+  font-size: 1rem;
+  font-weight: 700;
+}

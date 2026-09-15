@@ -4,6 +4,34 @@ Plataforma web para buscar, publicar e inscribirse en torneos de ajedrez en Méx
 Esta etapa es un **prototipo funcional con datos relacionales locales** que ya
 tienen la forma de las tablas de `supabase/schema.sql` (aún sin backend conectado).
 
+> ## 🆕 Versión Vue 3 + Vite (`app/`)
+> Existe una **reconstrucción de la misma demo en Vue 3 + Vue Router (hash) + Vite**,
+> con estilo visual inspirado en chess.com. Mismo núcleo de dominio (repositorios,
+> máquina de estados, mocks) reutilizado como módulos ESM.
+>
+> ```bash
+> cd app
+> npm install
+> npm run dev
+> npm run build
+> ```
+>
+> - `npm run dev` → servidor de desarrollo en http://localhost:5173
+> - `npm run build` → build de producción en `app/dist` (base relativa, listo para GitHub Pages)
+>
+> Nota: ejecuta los comandos tal cual, **sin comentarios al final de la línea**;
+> en cmd.exe de Windows el carácter `#` no inicia un comentario y se pasaría
+> a Vite como argumento (haría que busque el proyecto en una carpeta `#`).
+| Ruta (hash) | Contenido |
+|---|---|
+| `#/` | Catálogo con hero, buscador y filtros |
+| `#/torneo/:id` | Detalle con categorías y panel de inscripción |
+| `#/torneo/:id/inscribirse` | Formulario de inscripción |
+| `#/pagar/:folio` | Checkout simulado (webhook demo) |
+| `#/mis-inscripciones` | Inscripciones del jugador + cancelación temprana |
+| `#/registro` · `#/acceder` | Cuentas con rol (jugador/organizador) |
+| `#/panel/*` | Dashboard del organizador (resumen, torneos, eventos, pagos, check-in, QR, reportes, cobrar) |
+
 ## Cómo ejecutar el prototipo
 
 Los módulos JS (`type="module"`) requieren servirse por HTTP. Opciones:
