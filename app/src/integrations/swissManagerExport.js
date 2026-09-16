@@ -194,22 +194,14 @@ export const SwissManagerExport = {
         `birthday="${fechaSwiss(j.fechaNacimiento)}"`,
         `club="${escaparXml(j.club || '')}"`
       ];
-      return `    <Participant ${attrs.join(' ')} />`;
+            return `    <Player ${attrs.join(' ')} />`;
     });
 
-    const xml = [
+        const xml = [
       '<?xml version="1.0" encoding="utf-8"?>',
-      '<Tournament>',
-      `  <Name>${escaparXml(torneo.nombre)}</Name>`,
-      `  <StartDate>${fechaSwiss(torneo.fecha)}</StartDate>`,
-      `  <EndDate>${fechaSwiss(torneo.fecha)}</EndDate>`,
-      `  <Rounds>${torneo.rondas || 7}</Rounds>`,
-      `  <TimeControl>${escaparXml(torneo.ritmo || '15+10')}</TimeControl>`,
-      `  <Place>${escaparXml(torneo.sede || torneo.ciudad || '')}</Place>`,
-      '  <Participants>',
+      '<Players>',
       ...partidas,
-      '  </Participants>',
-      '</Tournament>'
+      '</Players>'
     ];
     return xml.join('\n') + '\n';
   },
