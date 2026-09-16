@@ -18,6 +18,7 @@
  * Nivel 2 (futuro): importar resultados. Nivel 3: API automatizada.
  */
 import { RegistrationsRepository } from '../core/registrationsRepository.js';
+import { OrganizadorRepository } from '../repositories/organizadorRepository.js';
 import { aCp1252 } from '../utils/cp1252.js';
 
 /** Columnas del CSV de inscritos (referencia, Excel). */
@@ -51,6 +52,16 @@ const CODIGOS_FEDERACION = new Map([
 ]);
 
 /** Escapa un valor CSV (comas, comillas y saltos de línea). */
+/** Escapa caracteres XML especiales. */
+function escaparXml(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, '&apos;');
+}
+
 function escaparCsv(valor) {
   const texto = String(valor ?? '');
   return /[",\n]/.test(texto) ? `"${texto.replaceAll('"', '""')}"` : texto;
@@ -162,6 +173,57 @@ export const SwissManagerExport = {
     return { cuenta, advertencias };
   },
 
+    /**
+   * Genera el contenido XML de importación para Swiss Manager.
+   * Formato compatible con: File → Import → Import tournament with participants.
+   */
+  async generarXml(torneoId) {
+    const torneo = await OrganizadorRepository.getTorneoPorId(torneoId);
+    if (!torneo) return '';
+    const participantes = await RegistrationsRepository.getParticipantes(torneoId);
+    const jugadores = participantes.filter((p) => ESTADOS_JUEGAN.includes(p.estado));
+
+    const partidas = jugadores.map((p) => {
+      const j = p.jugador || {};
+      const attrs = [
+        `name="${escaparXml(j.apellidos || '')} ${escaparXml(j.nombre || '')}"`,
+        `federation="${federacionSwiss(j.federacion)}"`,
+        `id="${escaparXml(j.fideId || '')}"`,
+        `live="${tituloSwiss(j.titulo)}"`,
+        `gender="${sexoSwiss(j.sexo)}"`,
+        `birthday="${fechaSwiss(j.fechaNacimiento)}"`,
+        `club="${escaparXml(j.club || '')}"`
+      ];
+      return `    <Participant ${attrs.join(' ')} />`;
+    });
+
+    const xml = [
+      '<?xml version="1.0" encoding="utf-8"?>',
+      '<Tournament>',
+      `  <Name>${escaparXml(torneo.nombre)}</Name>`,
+      `  <StartDate>${fechaSwiss(torneo.fecha)}</StartDate>`,
+      `  <EndDate>${fechaSwiss(torneo.fecha)}</EndDate>`,
+      `  <Rounds>${torneo.rondas || 7}</Rounds>`,
+      `  <TimeControl>${escaparXml(torneo.ritmo || '15+10')}</TimeControl>`,
+      `  <Place>${escaparXml(torneo.sede || torneo.ciudad || '')}</Place>`,
+      '  <Participants>',
+      ...partidas,
+      '  </Participants>',
+      '</Tournament>'
+    ];
+    return xml.join('\n') + '\n';
+  },
+
+  /** Descarga directa del XML de importación en el navegador. */
+  async descargarXml(torneoId, nombreTorneo) {
+    const xml = await this.generarXml(torneoId);
+    const bytes = new TextEncoder().encode(xml);
+    descargarBytes(bytes, nombreArchivo(nombreTorneo, 'torneo', 'xml'), 'application/xml;charset=utf-8');
+    const participantes = await RegistrationsRepository.getParticipantes(torneoId);
+    const cuenta = participantes.filter((p) => ESTADOS_JUEGAN.includes(p.estado)).length;
+    return { cuenta };
+  },
+
   /**
    * Genera el contenido CSV con todos los inscritos de un torneo.
    * Incluye BOM UTF-8 para que Excel abra los acentos correctamente.
@@ -213,7 +275,7 @@ export const SwissManagerExport = {
 
   /** Descarga directa del CSV de check-in en el navegador. */
   async descargarCheckin(torneoId, nombreTorneo) {
-    const csv = await this.generarCsvCheckin(torneoId);
+        const csv = await this.generarCsvCheckin(torneoId);
     const bytes = new TextEncoder().encode(csv);
     descargarBytes(bytes, nombreArchivo(nombreTorneo, 'checkin', 'csv'), 'text/csv;charset=utf-8');
   }

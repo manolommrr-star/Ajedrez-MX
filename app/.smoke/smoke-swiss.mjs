@@ -60,5 +60,16 @@ check('incluirTodos = 8', todos.cuenta === 8);
 const copa = await SwissManagerExport.generarTxt('copa-juvenil-xalapa');
 check('copa juvenil = 2', copa.cuenta === 2);
 
+// 9. XML de exportación
+const xmlStr = await SwissManagerExport.generarXml('xalapa-chess-open');
+check('XML raíz <Tournament>', xmlStr.includes('<Tournament>'));
+check('XML cierra </Tournament>', xmlStr.includes('</Tournament>'));
+check('XML <Participants>', xmlStr.includes('<Participants>'));
+check('XML <Participant', xmlStr.includes('<Participant'));
+check('XML versión xml', xmlStr.includes('<?xml version="1.0"'));
+check('XML FENAMAC → MEX', xmlStr.includes('federation="MEX"'));
+check('XML Ana presente', xmlStr.includes('name="Torres Ana"'));
+check('XML 5 participantes', (xmlStr.match(/<Participant[ />]/g) || []).length === 5);
+
 console.log(fallos === 0 ? '\nSMOKE OK' : `\nSMOKE con ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

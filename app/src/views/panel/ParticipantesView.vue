@@ -53,6 +53,16 @@ async function exportarTxtSwiss() {
   } catch { notificar('No fue posible generar el TXT.'); }
 }
 
+async function exportarXmlSwiss() {
+  try {
+    const { cuenta } = await SwissManagerExport.descargarXml(
+      props.id,
+      torneo.value ? torneo.value.nombre : props.id
+    );
+    notificar(`XML generado: ${cuenta} jugadores.`);
+  } catch { notificar('No fue posible generar el XML.'); }
+}
+
 async function exportarCheckin() {
   try {
     await SwissManagerExport.descargarCheckin(props.id, torneo.value ? torneo.value.nombre : props.id);
@@ -77,7 +87,8 @@ async function exportarCheckin() {
 
     <form class="filtros-fila" @submit.prevent>
       <input v-model="busqueda" class="control" placeholder="Buscar participante…" />
-      <button type="button" class="boton boton-verde boton-sm" @click="exportarTxtSwiss">TXT (Swiss Manager)</button>
+      <button type="button" class="boton boton-gris boton-sm" @click="exportarTxtSwiss">TXT (Swiss Manager)</button>
+      <button type="button" class="boton boton-gris boton-sm" @click="exportarXmlSwiss">XML (Swiss Manager)</button>
       <button type="button" class="boton boton-gris boton-sm" @click="exportarSwiss">Exportar CSV (Excel)</button>
       <button type="button" class="boton boton-gris boton-sm" @click="exportarCheckin">Exportar CSV (check-in)</button>
     </form>
