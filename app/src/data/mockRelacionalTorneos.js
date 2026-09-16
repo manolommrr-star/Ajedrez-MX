@@ -9,6 +9,8 @@
  * Una vez conectado Supabase, estos objetos saldrán de las tablas reales
  * y los repositorios (`js/core/`) cambiarán su origen sin cambiar su interfaz.
  */
+import { buildCategoriasTorneo } from './catalogoCategorias.js';
+
 export const ORGANIZADOR_DEMO = {
   id: 'org-demo',
   nombre: 'Club de Ajedrez Xalapa',
@@ -53,11 +55,14 @@ export const TORNEOS_DEMO = [
     ritmo: '15+10',
     cupo: 100,
     inscritos: 72,
-    categorias: [
-      { nombre: 'General', precio: 350 },
-      { nombre: 'Estudiante', precio: 250 },
-      { nombre: 'Infantil (sub 12)', precio: 200 }
-    ],
+    categorias: buildCategoriasTorneo(
+      ['absoluto', 'primera-fuerza', 'segunda-fuerza', 'tercera-fuerza', 'juvenil-u23', 'adulto', 'infantil'],
+      {
+        'infantil': { nombre: 'Infantil (sub 12)', precio: 200 },
+        'juvenil-u23': { nombre: 'Juvenil U23', precio: 350 },
+        'primera-fuerza': { nombre: 'Primera Fuerza', precio: 400 }
+      }
+    ),
     organizador: { nombre: 'Club de Ajedrez Xalapa', email: 'contacto@ajedrezxalapa.mx' },
     organizadorId: 'org-demo',
     reglamentoUrl: '',
@@ -88,10 +93,10 @@ export const TORNEOS_DEMO = [
     ritmo: '3+2',
     cupo: 64,
     inscritos: 41,
-    categorias: [
-      { nombre: 'General', precio: 250 },
-      { nombre: 'Estudiante', precio: 180 }
-    ],
+    categorias: buildCategoriasTorneo(['absoluto', 'adulto', 'juvenil-u23'], {
+      'adulto': { nombre: 'Adulto General', precio: 250 },
+      'juvenil-u23': { nombre: 'Juvenil U23', precio: 180 }
+    }),
     organizador: { nombre: 'Asociación de Ajedrez CDMX', email: 'info@ajedrezcdmx.mx' },
     organizadorId: 'org-cdmx',
     reglamentoUrl: '',

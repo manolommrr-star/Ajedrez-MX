@@ -29,20 +29,12 @@ const rutas = [
     component: PanelLayout,
     meta: { requiereOrganizador: true },
     children: [
-      { path: '', name: 'panel-resumen', component: () => import('@/views/panel/ResumenView.vue') },
+      { path: '', name: 'panel-resumen', component: () => import('@/views/panel/TorneoDetalleView.vue') },
       { path: 'torneos', name: 'panel-torneos', component: () => import('@/views/panel/TorneosView.vue') },
       { path: 'crear', name: 'panel-crear', component: () => import('@/views/panel/CrearTorneoView.vue') },
       { path: 'torneo/:id/editar', name: 'panel-editar', component: () => import('@/views/panel/CrearTorneoView.vue'), props: true },
-      { path: 'torneo/:id/inscripciones', name: 'panel-inscripciones', component: () => import('@/views/panel/InscripcionesView.vue'), props: true },
-      { path: 'torneo/:id/participantes', name: 'panel-participantes', component: () => import('@/views/panel/ParticipantesView.vue'), props: true },
-      { path: 'torneo/:id/checkin', name: 'panel-checkin-torneo', component: () => import('@/views/panel/CheckinTorneoView.vue'), props: true },
-      { path: 'eventos', name: 'panel-eventos', component: () => import('@/views/panel/EventosView.vue') },
-      { path: 'evento/:id', name: 'panel-evento', component: () => import('@/views/panel/EventoDetalleView.vue'), props: true },
-      { path: 'pagos', name: 'panel-pagos', component: () => import('@/views/panel/PagosView.vue') },
-      { path: 'checkin', name: 'panel-checkin', component: () => import('@/views/panel/CheckinIndiceView.vue') },
-      { path: 'qr', name: 'panel-qr', component: () => import('@/views/panel/QrView.vue') },
-      { path: 'reportes', name: 'panel-reportes', component: () => import('@/views/panel/ReportesView.vue') },
-      { path: 'cobrar', name: 'panel-cobrar', component: () => import('@/views/panel/CobrarView.vue') }
+      { path: 'torneo/:id', name: 'panel-torneo-detalle', component: () => import('@/views/panel/TorneoDetalleView.vue'), props: true },
+      { path: 'configuracion', name: 'panel-configuracion', component: () => import('@/views/panel/ConfiguracionView.vue') }
     ]
   },
 
