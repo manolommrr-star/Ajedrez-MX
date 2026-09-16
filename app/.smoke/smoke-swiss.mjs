@@ -60,17 +60,22 @@ check('incluirTodos = 8', todos.cuenta === 8);
 const copa = await SwissManagerExport.generarTxt('copa-juvenil-xalapa');
 check('copa juvenil = 2', copa.cuenta === 2);
 
-// 9. XML de exportación
+// 9. XML de exportación (formato atributos: sname, pname, fd, bcode, title, sex, dob, cid1)
 const xmlStr = await SwissManagerExport.generarXml('xalapa-chess-open');
 check('XML raíz <tournament>', xmlStr.includes('<tournament>'));
 check('XML cierra </tournament>', xmlStr.includes('</tournament>'));
 check('XML <players>', xmlStr.includes('<players>'));
-check('XML <player>', xmlStr.includes('<player>'));
+check('XML <player ... />', /<player [^>]+ \/>/.test(xmlStr));
 check('XML versión xml', xmlStr.includes('<?xml version="1.0"'));
-check('XML FENAMAC → MEX', xmlStr.includes('<federation>MEX</federation>'));
-check('XML Ana - surname', xmlStr.includes('<surname>Torres</surname>'));
-check('XML Ana - firstname', xmlStr.includes('<firstname>Ana</firstname>'));
-check('XML 5 players', (xmlStr.match(/<player>/g) || []).length === 5);
+check('XML FENAMAC → fd="MEX"', xmlStr.includes('fd="MEX"'));
+check('XML Ana - sname', /sname="[^"]*Torres[^"]*"/.test(xmlStr));
+check('XML Ana - pname', /pname="[^"]*Ana[^"]*"/.test(xmlStr));
+check('XML bcode attr', xmlStr.includes('bcode='));
+check('XML title attr', xmlStr.includes('title='));
+check('XML sex attr', xmlStr.includes('sex='));
+check('XML dob attr', xmlStr.includes('dob='));
+check('XML cid1 attr', xmlStr.includes('cid1='));
+check('XML 5 players', (xmlStr.match(/<player /g) || []).length === 5);
 
 console.log(fallos === 0 ? '\nSMOKE OK' : `\nSMOKE con ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

@@ -62,6 +62,15 @@ function escaparXml(valor) {
     .replace(/'/g, '&apos;');
 }
 
+/** Escapa caracteres XML para atributos. */
+function escaparAttrXml(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function escaparCsv(valor) {
   const texto = String(valor ?? '');
   return /[",\n]/.test(texto) ? `"${texto.replaceAll('"', '""')}"` : texto;
@@ -186,20 +195,19 @@ export const SwissManagerExport = {
     const partidas = jugadores.map((p) => {
       const j = p.jugador || {};
       return [
-        '      <player>',
-        `        <surname>${escaparXml(j.apellidos || '')}</surname>`,
-        `        <firstname>${escaparXml(j.nombre || '')}</firstname>`,
-        `        <federation>${federacionSwiss(j.federacion)}</federation>`,
-        `        <oid>${escaparXml(j.fideId || '')}</oid>`,
-        `        <title>${tituloSwiss(j.titulo)}</title>`,
-        `        <sex>${sexoSwiss(j.sexo)}</sex>`,
-        `        <birthday>${fechaSwiss(j.fechaNacimiento)}</birthday>`,
-        `        <club>${escaparXml(j.club || '')}</club>`,
-        '      </player>'
-      ].join('\r\n');
+        '      <player sname="' + escaparAttrXml(j.apellidos || '') + '"',
+        '              pname="' + escaparAttrXml(j.nombre || '') + '"',
+        '              fd="' + federacionSwiss(j.federacion) + '"',
+        '              bcode="' + escaparAttrXml(j.fideId || '') + '"',
+        '              title="' + tituloSwiss(j.titulo) + '"',
+        '              sex="' + sexoSwiss(j.sexo) + '"',
+        '              dob="' + fechaSwiss(j.fechaNacimiento) + '"',
+        '              cid1="' + escaparAttrXml(j.club || '') + '"',
+        '      />'
+      ].join('');
     });
 
-        const xml = [
+    const xml = [
       '<?xml version="1.0" encoding="utf-8"?>',
       '<tournament>',
       '  <players>',
