@@ -67,7 +67,7 @@ check('XML cierra </Players>', xmlStr.includes('</Players>'));
 check('XML <Player', xmlStr.includes('<Player'));
 check('XML versión xml', xmlStr.includes('<?xml version="1.0"'));
 check('XML FENAMAC → MEX', xmlStr.includes('federation="MEX"'));
-check('XML Ana presente', xmlStr.includes('name="Torres Ana"'));
+check('XML Ana presente', xmlStr.includes('surname="Torres"') && xmlStr.includes('firstname="Ana"'));
 check('XML 5 players', (xmlStr.match(/<Player[ />]/g) || []).length === 5);
 
 console.log(fallos === 0 ? '\nSMOKE OK' : `\nSMOKE con ${fallos} fallo(s)`);

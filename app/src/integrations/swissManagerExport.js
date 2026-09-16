@@ -186,11 +186,11 @@ export const SwissManagerExport = {
     const partidas = jugadores.map((p) => {
       const j = p.jugador || {};
       const attrs = [
-        `name="${escaparXml(j.apellidos || '')} ${escaparXml(j.nombre || '')}"`,
+        `surname="${escaparXml(j.apellidos || '')}" firstname="${escaparXml(j.nombre || '')}"`,
         `federation="${federacionSwiss(j.federacion)}"`,
-        `id="${escaparXml(j.fideId || '')}"`,
+        `oid="${escaparXml(j.fideId || '')}"`,
         `title="${tituloSwiss(j.titulo)}"`,
-        `gender="${sexoSwiss(j.sexo)}"`,
+        `sex="${sexoSwiss(j.sexo)}"`,
         `birthday="${fechaSwiss(j.fechaNacimiento)}"`,
         `club="${escaparXml(j.club || '')}"`
       ];
