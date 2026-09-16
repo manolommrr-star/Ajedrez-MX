@@ -1,6 +1,6 @@
 # 04 · Exportación de jugadores a Swiss Manager
 
-Función: **Panel → Torneos → Participantes → "TXT (Swiss Manager)"**.
+Función: **Panel → Torneos → Participantes → "TXT (Swiss Manager)" o "XML (Swiss Manager)"**.
 
 ## Qué genera la app
 
@@ -73,4 +73,29 @@ Si algo falla, anota qué campo quedó mal y ajustamos el orden/formato del TXT 
 
 - Codificador cp1252: `app/src/utils/cp1252.js` (y espejo en `js/utils/` para el prototipo). Caracteres no representables → `?`.
 - El CSV "Excel" (UTF-8 con BOM) sigue disponible para hojas de cálculo; el TXT es específicamente para Swiss Manager.
-- Smoke test: `app/.smoke/smoke-swiss.mjs` (22 validaciones de bytes, columnas, normalizadores y filtro de estados).
+- Smoke test: `app/.smoke/smoke-swiss.mjs` (29 validaciones de bytes, columnas, normalizadores, filtro de estados y XML).
+
+## XML (alternativa al TXT)
+
+Además del TXT, la app genera un archivo `torneo_<nombretorneo>.xml` con estructura `<Players>` / `<Player>` que Swiss Manager reconoce vía **File → Import → Import Players (XML)**.
+
+| Atributo del `<Player>` | Origen | Normalización |
+|---|---|---|
+| `name` | `apellidos + nombre` | apellidos y nombre escapados en XML |
+| `federation` | `jugador.federacion` | `FENAMAC` → `MEX`; vacío → `MEX`; códigos de 3 letras se respetan |
+| `id` | `jugador.fideId` | FIDE ID (puede estar vacío) |
+| `title` | `jugador.titulo` | solo títulos FIDE (GM/IM/FM/CM/W*); `MN` u otros nacionales → vacío |
+| `gender` | `jugador.sexo` | `M`/`F`; sin datos → vacío |
+| `birthday` | `jugador.fechaNacimiento` | `1994-05-12` → `12.05.1994` |
+| `club` | `jugador.club` | escapado en XML |
+
+**Ejemplo de XML generado:**
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Players>
+    <Player name="Torres Ana" federation="MEX" id="5123456" live="" gender="" birthday="12.05.1994" club="Club de Ajedrez Xalapa" />
+    <Player name="Ramírez Luis" federation="MEX" id="5123457" live="" gender="" birthday="03.11.2001" club="Club Coatepec" />
+    ...
+</Players>
+```
