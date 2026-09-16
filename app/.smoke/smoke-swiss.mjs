@@ -61,21 +61,22 @@ const copa = await SwissManagerExport.generarTxt('copa-juvenil-xalapa');
 check('copa juvenil = 2', copa.cuenta === 2);
 
 // 9. XML de exportación (formato atributos: sname, pname, fd, bcode, title, sex, dob, cid1)
+// 9. XML de exportación (formato Swiss Manager: <Players><Player ... />)
 const xmlStr = await SwissManagerExport.generarXml('xalapa-chess-open');
-check('XML raíz <tournament>', xmlStr.includes('<tournament>'));
-check('XML cierra </tournament>', xmlStr.includes('</tournament>'));
-check('XML <players>', xmlStr.includes('<players>'));
-check('XML <player ... />', /<player [^>]+ \/>/.test(xmlStr));
+check('XML raíz <Players>', xmlStr.includes('<Players>'));
+check('XML cierra </Players>', xmlStr.includes('</Players>'));
+check('XML <Player ... />', /<Player [^>]+ \/>/.test(xmlStr));
 check('XML versión xml', xmlStr.includes('<?xml version="1.0"'));
-check('XML FENAMAC → fd="MEX"', xmlStr.includes('fd="MEX"'));
-check('XML Ana - sname', /sname="[^"]*Torres[^"]*"/.test(xmlStr));
-check('XML Ana - pname', /pname="[^"]*Ana[^"]*"/.test(xmlStr));
-check('XML bcode attr', xmlStr.includes('bcode='));
-check('XML title attr', xmlStr.includes('title='));
-check('XML sex attr', xmlStr.includes('sex='));
-check('XML dob attr', xmlStr.includes('dob='));
-check('XML cid1 attr', xmlStr.includes('cid1='));
-check('XML 5 players', (xmlStr.match(/<player /g) || []).length === 5);
+check('XML Federation attr', xmlStr.includes('Federation="MEX"'));
+check('XML Lastname attr', /Lastname="[^"]*Torres[^"]*"/.test(xmlStr));
+check('XML Firstname attr', /Firstname="[^"]*Ana[^"]*"/.test(xmlStr));
+check('XML FIDEId attr', xmlStr.includes('FIDEId='));
+check('XML Title attr', xmlStr.includes('Title='));
+check('XML Birthday attr (YYYYMMDD)', /Birthday="\d{8}"/.test(xmlStr));
+check('XML Gender attr', xmlStr.includes('Gender='));
+check('XML Club attr', xmlStr.includes('Club='));
+check('XML PlayerUniqueId', xmlStr.includes('PlayerUniqueId='));
+check('XML 5 jugadores', (xmlStr.match(/<Player /g) || []).length === 5);
 
 console.log(fallos === 0 ? '\nSMOKE OK' : `\nSMOKE con ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

@@ -87,6 +87,12 @@ function fechaSwiss(iso) {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : '';
 }
 
+/** 1994-05-12 -> 19940512 (formato Birthday XML Swiss Manager). */
+function fechaSwissIso(iso) {
+  const m = String(iso ?? '').trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[1] + m[2] + m[3] : '';
+}
+
 /** 'FENAMAC' → 'MEX'; código de 3 letras se respeta; vacío → 'MEX'. */
 function federacionSwiss(valor) {
   const texto = String(valor ?? '').trim().toUpperCase();
@@ -182,9 +188,16 @@ export const SwissManagerExport = {
     return { cuenta, advertencias };
   },
 
-    /**
+  /** Descarga directa del TXT de importación en el navegador. */
+
+  /**
    * Genera el contenido XML de importación para Swiss Manager.
    * Formato compatible con: File → Import → Import tournament with participants.
+   *
+   * Estructura esperada por Swiss Manager:
+   * <Players>
+   *   <Player PlayerUniqueId="1" Lastname="..." Firstname="..." Federation="..." ... />
+   * </Players>
    */
   async generarXml(torneoId) {
     const torneo = await OrganizadorRepository.getTorneoPorId(torneoId);
@@ -192,28 +205,29 @@ export const SwissManagerExport = {
     const participantes = await RegistrationsRepository.getParticipantes(torneoId);
     const jugadores = participantes.filter((p) => ESTADOS_JUEGAN.includes(p.estado));
 
-    const partidas = jugadores.map((p) => {
+    const partidas = jugadores.map((p, idx) => {
       const j = p.jugador || {};
-      return [
-        '      <player sname="' + escaparAttrXml(j.apellidos || '') + '"',
-        '              pname="' + escaparAttrXml(j.nombre || '') + '"',
-        '              fd="' + federacionSwiss(j.federacion) + '"',
-        '              bcode="' + escaparAttrXml(j.fideId || '') + '"',
-        '              title="' + tituloSwiss(j.titulo) + '"',
-        '              sex="' + sexoSwiss(j.sexo) + '"',
-        '              dob="' + fechaSwiss(j.fechaNacimiento) + '"',
-        '              cid1="' + escaparAttrXml(j.club || '') + '"',
-        '      />'
-      ].join('');
+      return (
+        '    <Player PlayerUniqueId="' + (idx + 1) + '"' +
+        ' Lastname="' + escaparAttrXml(j.apellidos || '') + '"' +
+        ' Firstname="' + escaparAttrXml(j.nombre || '') + '"' +
+        ' Federation="' + federacionSwiss(j.federacion) + '"' +
+        ' Rating="' + (j.rating || '') + '"' +
+        ' Birthday="' + fechaSwissIso(j.fechaNacimiento) + '"' +
+        ' Title="' + tituloSwiss(j.titulo) + '"' +
+        ' FIDEId="' + escaparAttrXml(j.fideId || '') + '"' +
+        ' NatId=""' +
+        ' Gender="' + (j.sexo ? sexoSwiss(j.sexo) : '') + '"' +
+        ' Club="' + escaparAttrXml(j.club || '') + '"' +
+        ' />'
+      );
     });
 
     const xml = [
       '<?xml version="1.0" encoding="utf-8"?>',
-      '<tournament>',
-      '  <players>',
+      '<Players>',
       ...partidas,
-      '  </players>',
-      '</tournament>'
+      '</Players>'
     ];
     return xml.join('\r\n') + '\r\n';
   },
