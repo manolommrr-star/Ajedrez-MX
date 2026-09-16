@@ -186,24 +186,26 @@ export const SwissManagerExport = {
     const partidas = jugadores.map((p) => {
       const j = p.jugador || {};
       return [
-        '    <Player>',
-        `        <Surname>${escaparXml(j.apellidos || '')}</Surname>`,
-        `        <Firstname>${escaparXml(j.nombre || '')}</Firstname>`,
-        `        <Federation>${federacionSwiss(j.federacion)}</Federation>`,
-        `        <Oid>${escaparXml(j.fideId || '')}</Oid>`,
-        `        <Title>${tituloSwiss(j.titulo)}</Title>`,
-        `        <Sex>${sexoSwiss(j.sexo)}</Sex>`,
-        `        <Birthday>${fechaSwiss(j.fechaNacimiento)}</Birthday>`,
-        `        <Club>${escaparXml(j.club || '')}</Club>`,
-        '    </Player>'
+        '      <player>',
+        `        <surname>${escaparXml(j.apellidos || '')}</surname>`,
+        `        <firstname>${escaparXml(j.nombre || '')}</firstname>`,
+        `        <federation>${federacionSwiss(j.federacion)}</federation>`,
+        `        <oid>${escaparXml(j.fideId || '')}</oid>`,
+        `        <title>${tituloSwiss(j.titulo)}</title>`,
+        `        <sex>${sexoSwiss(j.sexo)}</sex>`,
+        `        <birthday>${fechaSwiss(j.fechaNacimiento)}</birthday>`,
+        `        <club>${escaparXml(j.club || '')}</club>`,
+        '      </player>'
       ].join('\r\n');
     });
 
         const xml = [
       '<?xml version="1.0" encoding="utf-8"?>',
-      '<Players>',
+      '<tournament>',
+      '  <players>',
       ...partidas,
-      '</Players>'
+      '  </players>',
+      '</tournament>'
     ];
     return xml.join('\r\n') + '\r\n';
   },

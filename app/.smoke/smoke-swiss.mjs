@@ -62,14 +62,15 @@ check('copa juvenil = 2', copa.cuenta === 2);
 
 // 9. XML de exportación
 const xmlStr = await SwissManagerExport.generarXml('xalapa-chess-open');
-check('XML raíz <Players>', xmlStr.includes('<Players>'));
-check('XML cierra </Players>', xmlStr.includes('</Players>'));
-check('XML <Player', xmlStr.includes('<Player>'));
+check('XML raíz <tournament>', xmlStr.includes('<tournament>'));
+check('XML cierra </tournament>', xmlStr.includes('</tournament>'));
+check('XML <players>', xmlStr.includes('<players>'));
+check('XML <player>', xmlStr.includes('<player>'));
 check('XML versión xml', xmlStr.includes('<?xml version="1.0"'));
-check('XML FENAMAC → MEX', xmlStr.includes('<Federation>MEX</Federation>'));
-check('XML Ana - Surname', xmlStr.includes('<Surname>Torres</Surname>'));
-check('XML Ana - Firstname', xmlStr.includes('<Firstname>Ana</Firstname>'));
-check('XML 5 players', (xmlStr.match(/<Player>/g) || []).length === 5);
+check('XML FENAMAC → MEX', xmlStr.includes('<federation>MEX</federation>'));
+check('XML Ana - surname', xmlStr.includes('<surname>Torres</surname>'));
+check('XML Ana - firstname', xmlStr.includes('<firstname>Ana</firstname>'));
+check('XML 5 players', (xmlStr.match(/<player>/g) || []).length === 5);
 
 console.log(fallos === 0 ? '\nSMOKE OK' : `\nSMOKE con ${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);
