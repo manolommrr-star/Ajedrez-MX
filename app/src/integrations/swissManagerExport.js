@@ -185,16 +185,18 @@ export const SwissManagerExport = {
 
     const partidas = jugadores.map((p) => {
       const j = p.jugador || {};
-      const attrs = [
-        `surname="${escaparXml(j.apellidos || '')}" firstname="${escaparXml(j.nombre || '')}"`,
-        `federation="${federacionSwiss(j.federacion)}"`,
-        `oid="${escaparXml(j.fideId || '')}"`,
-        `title="${tituloSwiss(j.titulo)}"`,
-        `sex="${sexoSwiss(j.sexo)}"`,
-        `birthday="${fechaSwiss(j.fechaNacimiento)}"`,
-        `club="${escaparXml(j.club || '')}"`
-      ];
-            return `    <Player ${attrs.join(' ')} />`;
+      return [
+        '    <Player>',
+        `        <Surname>${escaparXml(j.apellidos || '')}</Surname>`,
+        `        <Firstname>${escaparXml(j.nombre || '')}</Firstname>`,
+        `        <Federation>${federacionSwiss(j.federacion)}</Federation>`,
+        `        <Oid>${escaparXml(j.fideId || '')}</Oid>`,
+        `        <Title>${tituloSwiss(j.titulo)}</Title>`,
+        `        <Sex>${sexoSwiss(j.sexo)}</Sex>`,
+        `        <Birthday>${fechaSwiss(j.fechaNacimiento)}</Birthday>`,
+        `        <Club>${escaparXml(j.club || '')}</Club>`,
+        '    </Player>'
+      ].join('\r\n');
     });
 
         const xml = [
@@ -203,7 +205,7 @@ export const SwissManagerExport = {
       ...partidas,
       '</Players>'
     ];
-    return xml.join('\n') + '\n';
+    return xml.join('\r\n') + '\r\n';
   },
 
   /** Descarga directa del XML de importación en el navegador. */
