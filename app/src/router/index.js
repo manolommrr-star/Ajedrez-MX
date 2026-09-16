@@ -29,7 +29,7 @@ const rutas = [
     component: PanelLayout,
     meta: { requiereOrganizador: true },
     children: [
-      { path: '', name: 'panel-resumen', component: () => import('@/views/panel/TorneoDetalleView.vue') },
+      { path: '', name: 'panel-resumen', component: () => import('@/views/panel/PanelInicioView.vue') },
       { path: 'torneos', name: 'panel-torneos', component: () => import('@/views/panel/TorneosView.vue') },
       { path: 'crear', name: 'panel-crear', component: () => import('@/views/panel/CrearTorneoView.vue') },
       { path: 'torneo/:id/editar', name: 'panel-editar', component: () => import('@/views/panel/CrearTorneoView.vue'), props: true },

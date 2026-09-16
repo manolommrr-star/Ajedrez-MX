@@ -44,7 +44,6 @@ async function registrar(p) {
   <p v-else-if="!torneo" class="aviso">El torneo no existe o no te pertenece.</p>
 
   <template v-else>
-    <RouterLink class="enlace-volver" :to="{ name: 'panel-inscripciones', params: { id } }">← Inscripciones</RouterLink>
     <h1 class="titulo-pagina">Check-in · {{ torneo.nombre }}</h1>
     <p class="subtitulo-pagina">{{ hechos }} de {{ elegibles.length }} confirmados ya registraron asistencia.</p>
 

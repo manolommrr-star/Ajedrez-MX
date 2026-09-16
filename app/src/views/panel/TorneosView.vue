@@ -77,9 +77,7 @@ async function duplicar(t) {
         <p class="fila-dato-meta">{{ t.inscritos }} / {{ t.cupo }} lugares ({{ ocupacion(t) }} %)</p>
       </div>
       <div class="fila-dato-pie fila-dato-acciones">
-        <RouterLink class="boton boton-texto" :to="{ name: 'panel-inscripciones', params: { id: t.id } }">Inscripciones</RouterLink>
-        <RouterLink class="boton boton-texto" :to="{ name: 'panel-participantes', params: { id: t.id } }">Participantes</RouterLink>
-        <RouterLink class="boton boton-texto" :to="{ name: 'panel-checkin-torneo', params: { id: t.id } }">Check-in</RouterLink>
+        <RouterLink class="boton boton-texto" :to="{ name: 'panel-torneo-detalle', params: { id: t.id } }">Gestionar</RouterLink>
         <RouterLink class="boton boton-texto" :to="{ name: 'panel-editar', params: { id: t.id } }">Editar</RouterLink>
         <button type="button" class="boton boton-texto" @click="duplicar(t)">Duplicar</button>
         <button v-if="t.estadoPublicacion === 'borrador'" type="button" class="boton boton-texto" @click="publicar(t)">Publicar</button>

@@ -81,8 +81,8 @@ async function exportarCheckin() {
     <p class="subtitulo-pagina">Torneo: {{ torneo.nombre }}. Lista para presentación y para Swiss-Manager.</p>
 
     <div class="chips-fila">
-      <RouterLink class="chip" :to="{ name: 'panel-inscripciones', params: { id } }">Gestionar inscripciones</RouterLink>
-      <RouterLink class="chip" :to="{ name: 'panel-checkin-torneo', params: { id } }">Check-in del día</RouterLink>
+      <RouterLink class="chip" :to="{ name: 'panel-editar', params: { id } }">Editar torneo</RouterLink>
+      <RouterLink class="chip" :to="{ name: 'panel-torneos' }">Volver a mis torneos</RouterLink>
     </div>
 
     <form class="filtros-fila" @submit.prevent>

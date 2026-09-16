@@ -1,44 +1,51 @@
 <script setup>
 /** Panel principal del organizador (dashboard). */
-import { computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
 import { RegistrationsRepository } from '@/core/registrationsRepository.js';
-import { usarOrganizador } from '@/composables/usarOrganizador.js';
-import { usoTorneo } from '@/composables/usoTorneo.js';
 
 const router = useRouter();
-const { organizadorId } = usarOrganizador();
-const { torneo } = usoTorneo();
-const proximos = computed(() => torneo.proximos);
-const activos = computed(() => torneo.activos);
-const recientes = computed(() => torneo.recientes);
+const perfil = ref(null);
+const torneos = ref([]);
+const estadisticas = ref({});
+const cargando = ref(true);
 
-const estadisticas = computed(() => {
-  const porTorneo = {};
-  for (const t of recientes.value) {
-    const regs = RegistrationsRepository.getPorTorneo(t.id);
-    porTorneo[t.id] = {
+onMounted(async () => {
+  perfil.value = await OrganizadorRepository.getPerfil();
+  torneos.value = await OrganizadorRepository.getTorneos();
+  // getPorTorneo es asíncrono: se resuelven una vez y se guardan en un ref.
+  for (const t of torneos.value) {
+    const regs = await RegistrationsRepository.getPorTorneo(t.id);
+    estadisticas.value[t.id] = {
       confirmados: regs.filter((r) => r.estado === 'confirmada' || r.estado === 'checkin').length,
-      pendientes: regs.filter((r) => r.estado === 'pendiente' || r.estado === 'pago_pendiente').length
+      pendientes: regs.filter((r) =>
+        ['pendiente', 'pago_pendiente', 'pago_en_revision'].includes(r.estado)).length
     };
   }
-  return porTorneo;
+  cargando.value = false;
 });
 
-function irTorneo(id) { router.push({ name: 'panel-torneo', params: { id } }); }
+const hoy = computed(() => new Date().toISOString().slice(0, 10));
+const proximos = computed(() =>
+  torneos.value.filter((t) => t.fecha >= hoy.value && t.estadoPublicacion === 'publicado'));
+const activos = computed(() =>
+  torneos.value.filter((t) => t.fecha < hoy.value && t.estadoPublicacion === 'publicado'));
+
+function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id } }); }
 </script>
 
 <template>
   <section class="panel-inicio">
     <header class="panel-inicio-header">
       <h1>Panel del organizador</h1>
-      <p class="panel-inicio-sub">{{ organizadorId?.nombre || 'Organizador' }}</p>
+      <p class="panel-inicio-sub">{{ perfil?.nombre || 'Organizador' }}</p>
     </header>
 
     <div class="panel-fila-accesos">
       <RouterLink :to="{name:'panel-torneos'}" class="acceso">📋 Mis torneos</RouterLink>
       <RouterLink :to="{name:'panel-crear'}" class="acceso">➕ Crear torneo</RouterLink>
-      <RouterLink :to="{name:'panel-reportes'}" class="acceso">📊 Reportes</RouterLink>
+      <RouterLink :to="{name:'panel-configuracion'}" class="acceso">📊 Reportes</RouterLink>
       <RouterLink :to="{name:'panel-configuracion'}" class="acceso">⚙️ Configuración</RouterLink>
     </div>
 

@@ -12,15 +12,10 @@ const router = useRouter();
 const { estado, cerrarSesion, refrescarSesion } = useSesion();
 
 const SECCIONES = [
-  { nombre: 'panel-resumen', texto: 'Resumen' },
+  { nombre: 'panel-resumen', texto: 'Inicio' },
   { nombre: 'panel-torneos', texto: 'Mis torneos' },
   { nombre: 'panel-crear', texto: 'Crear torneo' },
-  { nombre: 'panel-eventos', texto: 'Eventos' },
-  { nombre: 'panel-pagos', texto: 'Pagos' },
-  { nombre: 'panel-cobrar', texto: 'Cobrar' },
-  { nombre: 'panel-checkin', texto: 'Check-in' },
-  { nombre: 'panel-qr', texto: 'Validación QR' },
-  { nombre: 'panel-reportes', texto: 'Reportes' }
+  { nombre: 'panel-configuracion', texto: 'Configuración' }
 ];
 
 const menuAbierto = ref(false);

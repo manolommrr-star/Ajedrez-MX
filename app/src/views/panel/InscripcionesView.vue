@@ -89,8 +89,7 @@ async function registrarEfectivo() {
     </p>
 
     <div class="chips-fila">
-      <RouterLink class="chip" :to="{ name: 'panel-participantes', params: { id } }">Ver participantes</RouterLink>
-      <RouterLink class="chip" :to="{ name: 'panel-checkin-torneo', params: { id } }">Check-in del día</RouterLink>
+      <span class="chip chip-info">Usa las pestañas de arriba para ver participantes y check-in</span>
     </div>
 
     <h2 class="seccion-titulo">Registrar pago en efectivo</h2>

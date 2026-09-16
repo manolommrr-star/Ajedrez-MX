@@ -1,6 +1,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import InscripcionesView from '@/views/panel/InscripcionesView.vue'
+import ParticipantesView from '@/views/panel/ParticipantesView.vue'
+import CheckinTorneoView from '@/views/panel/CheckinTorneoView.vue'
+import PagosView from '@/views/panel/PagosView.vue'
 
 const route = useRoute()
 const tabActiva = ref('general')
@@ -20,10 +24,10 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-    const { organizadorRepository } = await import('@/repositories/organizadorRepository.js')
+    const { OrganizadorRepository } = await import('@/repositories/organizadorRepository.js')
     const id = torneoId.value
     if (id) {
-      torneo.value = await organizadorRepository.getTorneoById(id)
+      torneo.value = await OrganizadorRepository.getTorneoPorId(id)
     }
   } catch (e) {
     console.error('Error al cargar torneo:', e)
@@ -101,13 +105,13 @@ onMounted(async () => {
           </section>
         </div>
         <div v-else-if="tabActiva === 'inscripciones'" class="tab-pane">
-          <InscripcionesView />
+          <InscripcionesView :id="torneoId" />
         </div>
         <div v-else-if="tabActiva === 'participantes'" class="tab-pane">
-          <ParticipantesView />
+          <ParticipantesView :id="torneoId" />
         </div>
         <div v-else-if="tabActiva === 'checkin'" class="tab-pane">
-          <CheckinTorneoView />
+          <CheckinTorneoView :id="torneoId" />
         </div>
         <div v-else-if="tabActiva === 'pagos'" class="tab-pane">
           <PagosView />

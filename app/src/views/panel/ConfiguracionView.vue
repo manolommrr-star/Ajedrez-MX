@@ -8,7 +8,7 @@ const router = useRouter();
 const pestana = ref('categorias');
 const genero = computed(() => ({ edades: CATEGORIAS_EDAD, nivel: CATEGORIAS_NIVEL, especial: CATEGORIAS_ESPECIAL, total: CATALOGO_CATEGORIAS }));
 
-function irTorneo(id) { router.push({ name: 'panel-torneo', params: { id } }); }
+function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id } }); }
 </script>
 
 <template>
