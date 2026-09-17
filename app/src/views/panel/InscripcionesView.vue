@@ -5,7 +5,6 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
-import { PlayersRepository } from '@/core/playersRepository.js';
 import { Formatters } from '@/utils/formatters.js';
 import { notificar } from '@/composables/useAviso.js';
 import EstadoInsignia from '@/components/EstadoInsignia.vue';
@@ -15,13 +14,9 @@ const props = defineProps({ id: { type: String, required: true } });
 
 const torneo = ref(null);
 const participantes = ref([]);
-const jugadores = ref([]);
 const cargando = ref(true);
 const pagoJugador = ref('');
 const pagoCategoria = ref('');
-const mostrarNuevoJugador = ref(false);
-const creandoJugador = ref(false);
-const nuevoJugador = ref({ nombre: '', apellidos: '', fideId: '', elo: '', club: '' });
 
 const columnas = ['Jugador', 'Categoría', 'Cuota', 'Estado', 'Fecha', 'Acciones'];
 
@@ -35,11 +30,21 @@ const pendientes = computed(() => participantes.value.filter(
   (p) => p.estado === 'pago_pendiente' || p.estado === 'pago_en_revision'
 ).length);
 
+/** Opciones del select de pago: solo inscripciones del torneo con pago pendiente. */
+const opcionesPago = computed(() => participantes.value
+  .filter((p) => p.estado === 'pago_pendiente' || p.estado === 'pago_en_revision')
+  .map((p) => ({ id: p.playerId, etiqueta: p.nombreJugador, categoria: p.categoria })));
+
+/** Al elegir un jugador, preselecciona su categoría registrada. */
+function alElegirPago() {
+  const opcion = opcionesPago.value.find((o) => o.id === pagoJugador.value);
+  if (opcion?.categoria) pagoCategoria.value = opcion.categoria;
+}
+
 async function cargar() {
   torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
   if (torneo.value) {
     participantes.value = await OrganizadorRepository.getParticipantes(props.id);
-    jugadores.value = await PlayersRepository.buscar('');
     if (torneo.value.categorias?.length) pagoCategoria.value = torneo.value.categorias[0].nombre;
   }
   cargando.value = false;
@@ -62,32 +67,6 @@ async function aplicar(p, accion) {
   const ok = await OrganizadorRepository.actualizarEstadoInscripcion(p.id, destino);
   notificar(ok ? 'Inscripción actualizada.' : 'Transición no válida.');
   if (ok) p.estado = destino;
-}
-
-async function crearJugadorNuevo() {
-  if (!nuevoJugador.value.nombre || !nuevoJugador.value.apellidos) {
-    notificar('Nombre y apellidos son obligatorios.');
-    return;
-  }
-  creandoJugador.value = true;
-  try {
-    const creado = await PlayersRepository.crearJugador({
-      nombre: nuevoJugador.value.nombre,
-      apellidos: nuevoJugador.value.apellidos,
-      fideId: nuevoJugador.value.fideId,
-      elo: nuevoJugador.value.elo,
-      club: nuevoJugador.value.club
-    });
-    jugadores.value.push(creado);
-    pagoJugador.value = creado.id;
-    notificar(`Jugador ${creado.apellidos} ${creado.nombre} creado.`);
-    mostrarNuevoJugador.value = false;
-    nuevoJugador.value = { nombre: '', apellidos: '', fideId: '', elo: '', club: '' };
-  } catch {
-    notificar('No fue posible crear el jugador.');
-  } finally {
-    creandoJugador.value = false;
-  }
 }
 
 async function registrarEfectivo() {
@@ -124,44 +103,19 @@ async function registrarEfectivo() {
     <h2 class="seccion-titulo">Registrar pago en efectivo</h2>
     <form class="tarjeta" @submit.prevent="registrarEfectivo">
       <div class="campo-fila">
-        <label class="campo"><span class="campo-etiqueta">Jugador</span>
-          <select v-model="pagoJugador" class="control">
+        <label class="campo"><span class="campo-etiqueta">Jugador (pago pendiente)</span>
+          <select v-model="pagoJugador" class="control" @change="alElegirPago">
             <option value="">Seleccionar…</option>
-            <option v-for="j in jugadores" :key="j.id" :value="j.id">{{ j.apellidos }} {{ j.nombre }}{{ j.elo ? ` (${j.elo})` : '' }}</option>
+            <option v-for="o in opcionesPago" :key="o.id" :value="o.id">{{ o.etiqueta }}</option>
           </select></label>
-        <button type="button" class="boton boton-gris boton-sm" style="align-self: end;" @click="mostrarNuevoJugador = !mostrarNuevoJugador">
-          ＋ Nuevo jugador
-        </button>
         <label class="campo"><span class="campo-etiqueta">Categoría</span>
           <select v-model="pagoCategoria" class="control">
             <option v-for="c in torneo.categorias" :key="c.nombre" :value="c.nombre">{{ c.nombre }} · {{ Formatters.precio(c.precio) }}</option>
           </select></label>
       </div>
+      <p v-if="!opcionesPago.length" class="texto-suave">No hay inscripciones con pago pendiente en este torneo.</p>
 
-      <div v-if="mostrarNuevoJugador" class="tarjeta" style="margin-bottom: 1rem;">
-        <div class="campo-fila">
-          <label class="campo"><span class="campo-etiqueta">Nombre *</span>
-            <input v-model="nuevoJugador.nombre" class="control" placeholder="Nombre" /></label>
-          <label class="campo"><span class="campo-etiqueta">Apellidos *</span>
-            <input v-model="nuevoJugador.apellidos" class="control" placeholder="Apellidos" /></label>
-          <label class="campo"><span class="campo-etiqueta">FIDE ID</span>
-            <input v-model="nuevoJugador.fideId" class="control" placeholder="Ej. 5123456" /></label>
-        </div>
-        <div class="campo-fila">
-          <label class="campo"><span class="campo-etiqueta">Elo</span>
-            <input v-model="nuevoJugador.elo" class="control" placeholder="Ej. 1540" /></label>
-          <label class="campo"><span class="campo-etiqueta">Club</span>
-            <input v-model="nuevoJugador.club" class="control" placeholder="Club" /></label>
-        </div>
-        <div class="acciones-form">
-          <button type="button" class="boton boton-verde boton-sm" :disabled="creandoJugador" @click="crearJugadorNuevo">
-            {{ creandoJugador ? 'Creando…' : 'Crear jugador' }}
-          </button>
-          <button type="button" class="boton boton-gris boton-sm" @click="mostrarNuevoJugador = false">Cancelar</button>
-        </div>
-      </div>
-
-      <div class="acciones-form"><button type="submit" class="boton boton-verde boton-sm">Registrar pago</button></div>
+      <div class="acciones-form"><button type="submit" class="boton boton-verde boton-sm" :disabled="!opcionesPago.length">Registrar pago</button></div>
     </form>
 
     <h2 class="seccion-titulo">Listado</h2>
