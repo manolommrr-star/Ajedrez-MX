@@ -19,6 +19,9 @@ const jugadores = ref([]);
 const cargando = ref(true);
 const pagoJugador = ref('');
 const pagoCategoria = ref('');
+const mostrarNuevoJugador = ref(false);
+const creandoJugador = ref(false);
+const nuevoJugador = ref({ nombre: '', apellidos: '', fideId: '', elo: '', club: '' });
 
 const columnas = ['Jugador', 'Categoría', 'Cuota', 'Estado', 'Fecha', 'Acciones'];
 
@@ -61,6 +64,32 @@ async function aplicar(p, accion) {
   if (ok) p.estado = destino;
 }
 
+async function crearJugadorNuevo() {
+  if (!nuevoJugador.value.nombre || !nuevoJugador.value.apellidos) {
+    notificar('Nombre y apellidos son obligatorios.');
+    return;
+  }
+  creandoJugador.value = true;
+  try {
+    const creado = await PlayersRepository.crearJugador({
+      nombre: nuevoJugador.value.nombre,
+      apellidos: nuevoJugador.value.apellidos,
+      fideId: nuevoJugador.value.fideId,
+      elo: nuevoJugador.value.elo,
+      club: nuevoJugador.value.club
+    });
+    jugadores.value.push(creado);
+    pagoJugador.value = creado.id;
+    notificar(`Jugador ${creado.apellidos} ${creado.nombre} creado.`);
+    mostrarNuevoJugador.value = false;
+    nuevoJugador.value = { nombre: '', apellidos: '', fideId: '', elo: '', club: '' };
+  } catch {
+    notificar('No fue posible crear el jugador.');
+  } finally {
+    creandoJugador.value = false;
+  }
+}
+
 async function registrarEfectivo() {
   if (!pagoJugador.value || !pagoCategoria.value) {
     notificar('Elige jugador y categoría.');
@@ -100,11 +129,38 @@ async function registrarEfectivo() {
             <option value="">Seleccionar…</option>
             <option v-for="j in jugadores" :key="j.id" :value="j.id">{{ j.apellidos }} {{ j.nombre }}{{ j.elo ? ` (${j.elo})` : '' }}</option>
           </select></label>
+        <button type="button" class="boton boton-gris boton-sm" style="align-self: end;" @click="mostrarNuevoJugador = !mostrarNuevoJugador">
+          ＋ Nuevo jugador
+        </button>
         <label class="campo"><span class="campo-etiqueta">Categoría</span>
           <select v-model="pagoCategoria" class="control">
             <option v-for="c in torneo.categorias" :key="c.nombre" :value="c.nombre">{{ c.nombre }} · {{ Formatters.precio(c.precio) }}</option>
           </select></label>
       </div>
+
+      <div v-if="mostrarNuevoJugador" class="tarjeta" style="margin-bottom: 1rem;">
+        <div class="campo-fila">
+          <label class="campo"><span class="campo-etiqueta">Nombre *</span>
+            <input v-model="nuevoJugador.nombre" class="control" placeholder="Nombre" /></label>
+          <label class="campo"><span class="campo-etiqueta">Apellidos *</span>
+            <input v-model="nuevoJugador.apellidos" class="control" placeholder="Apellidos" /></label>
+          <label class="campo"><span class="campo-etiqueta">FIDE ID</span>
+            <input v-model="nuevoJugador.fideId" class="control" placeholder="Ej. 5123456" /></label>
+        </div>
+        <div class="campo-fila">
+          <label class="campo"><span class="campo-etiqueta">Elo</span>
+            <input v-model="nuevoJugador.elo" class="control" placeholder="Ej. 1540" /></label>
+          <label class="campo"><span class="campo-etiqueta">Club</span>
+            <input v-model="nuevoJugador.club" class="control" placeholder="Club" /></label>
+        </div>
+        <div class="acciones-form">
+          <button type="button" class="boton boton-verde boton-sm" :disabled="creandoJugador" @click="crearJugadorNuevo">
+            {{ creandoJugador ? 'Creando…' : 'Crear jugador' }}
+          </button>
+          <button type="button" class="boton boton-gris boton-sm" @click="mostrarNuevoJugador = false">Cancelar</button>
+        </div>
+      </div>
+
       <div class="acciones-form"><button type="submit" class="boton boton-verde boton-sm">Registrar pago</button></div>
     </form>
 
