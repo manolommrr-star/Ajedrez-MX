@@ -1,7 +1,7 @@
+<script setup>
 /**
  * Componente raíz: barra superior, vista activa, pie y toast global.
  */
-<script setup>
 import { onMounted } from 'vue';
 import AppBarra from '@/components/AppBarra.vue';
 import AppPie from '@/components/AppPie.vue';

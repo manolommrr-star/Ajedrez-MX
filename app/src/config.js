@@ -1,6 +1,5 @@
 /**
  * Configuración general de la aplicación Vue.
- * (Equivalente a js/config.js del prototipo vanilla.)
  */
 export const AppConfig = {
   nombreApp: 'AjedrezMX',

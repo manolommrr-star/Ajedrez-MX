@@ -7,7 +7,7 @@
  *
  * Los identificadores siguen el esquema canónico de supabase/schema.sql.
  * Una vez conectado Supabase, estos objetos saldrán de las tablas reales
- * y los repositorios (`js/core/`) cambiarán su origen sin cambiar su interfaz.
+ * y los repositorios (`core/`) cambiarán su origen sin cambiar su interfaz.
  */
 import { buildCategoriasTorneo } from './catalogoCategorias.js';
 

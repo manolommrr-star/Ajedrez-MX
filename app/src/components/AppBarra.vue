@@ -1,7 +1,7 @@
+<script setup>
 /**
  * Barra superior (estilo chess.com): logo, navegación y acciones de sesión.
  */
-<script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSesion } from '@/composables/useSesion.js';

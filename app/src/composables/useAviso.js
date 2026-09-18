@@ -1,5 +1,5 @@
 /**
- * Avisos tipo toast (equivalente a notificar() del prototipo vanilla).
+ * Avisos tipo toast.
  * `mensaje` es reactivo: el componente <AvisoToast> lo muestra.
  */
 import { ref } from 'vue';
@@ -13,8 +13,4 @@ export function notificar(texto) {
   mensaje.value = String(texto ?? '');
   clearTimeout(temporizador);
   temporizador = setTimeout(() => { mensaje.value = ''; }, 3500);
-}
-
-export function useAviso() {
-  return { mensaje, notificar };
 }

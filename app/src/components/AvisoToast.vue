@@ -1,7 +1,7 @@
+<script setup>
 /**
  * Toast global: muestra el aviso emitido con notificar().
  */
-<script setup>
 import { mensaje } from '@/composables/useAviso.js';
 </script>
 

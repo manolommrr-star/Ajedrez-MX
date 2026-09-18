@@ -3,7 +3,7 @@
 ## Entidades principales y sus repositorios
 
 ### 1. Player (Jugador)
-**Archivo:** `js/core/playersRepository.js`
+**Archivo:** `app/src/core/playersRepository.js`
 - `getPorId(id)` → obtiene un jugador por ID
 - `buscar(texto)` → busca por nombre, apellidos, FIDE ID o club
 - `crearJugador(datos)` → crea jugador (limpia campos vacíos, normaliza ELO)
@@ -13,7 +13,7 @@
 ---
 
 ### 2. Tournament (Torneo)
-**Archivo:** `js/repositories/tournamentRepository.js`
+**Archivo:** `app/src/repositories/tournamentRepository.js`
 - Gestión de torneos: crear, publicar, cancelar
 - Estados: draft → publicado → cancelado/archivado
 
@@ -22,7 +22,7 @@
 ---
 
 ### 3. Registro/Inscripción
-**Archivo:** `js/core/registrationsRepository.js`
+**Archivo:** `app/src/core/registrationsRepository.js`
 
 #### Máquina de estados
 ```
@@ -47,26 +47,24 @@ pendiente → pago_pendiente → pago_en_revision → pagada → confirmada → 
 ---
 
 ### 4. Payment (Pago)
-**Archivo:** `js/core/paymentsRepository.js`
+**Archivo:** `app/src/core/paymentsRepository.js`
 - `getPagos()` → lista todos los pagos (más recientes primero)
-- `getCobrado()` → suma total pagado
-- `getConteoPorEstado()` → conteo para chips de filtro
 - `simularWebhook(pagoId)` → confirma pago + actualiza inscripción asociada
-- `reembolsar()` / `marcarProcesando()` → solo demo local
+- `reembolsar(pagoId)` → solo demo local
 
 **Estados pago:** pendiente → procesando → pagado → reembolsado
 
 ---
 
 ### 5. Events (Eventos)
-**Archivo:** `js/core/eventsRepository.js`
+**Archivo:** `app/src/core/eventsRepository.js`
 - Eventos asociados a torneos (rondas, categorías, premios)
 
 ---
 
 ### 6. Cuentas/Sesión
-**Archivo:** `js/core/cuentasRepository.js` + `js/core/sesion.js`
+**Archivo:** `app/src/core/cuentasRepository.js` + `app/src/core/sesion.js`
 - Roles: `jugador` (player), `organizador` (organizer)
-- `iniciarSesion()`, `cerrarSesion()`, `getCuenta()`, `getJugador()`, `getOrganizador()`
+- `iniciar()` (login), `cerrar()` (logout), `getCuenta()`, `getJugador()`, `getOrganizador()`
 
 Próximo doc: [03-flujos.md](03-flujos.md)

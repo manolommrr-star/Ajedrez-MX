@@ -14,34 +14,11 @@ export const PaymentsRepository = {
     return PAGOS_DEMO.slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
   },
 
-  async getCobrado() {
-    return PAGOS_DEMO
-      .filter((p) => p.estado === 'pagado')
-      .reduce((sum, p) => sum + p.monto, 0);
-  },
-
-  /** Conteo de pagos por estado (para los chips de la página Pagos). */
-  async getConteoPorEstado() {
-    const conteo = {};
-    for (const p of PAGOS_DEMO) {
-      conteo[p.estado] = (conteo[p.estado] || 0) + 1;
-    }
-    return conteo;
-  },
-
   /** Marca un pago como reembolsado (solo demo local). */
   async reembolsar(pagoId) {
     const pago = PAGOS_DEMO.find((p) => p.id === pagoId);
     if (!pago || pago.estado !== 'pagado') return false;
     pago.estado = 'reembolsado';
-    return true;
-  },
-
-  /** Reintenta un pago pendiente/procesando (solo demo local). */
-  async marcarProcesando(pagoId) {
-    const pago = PAGOS_DEMO.find((p) => p.id === pagoId);
-    if (!pago || (pago.estado !== 'pendiente' && pago.estado !== 'procesando')) return false;
-    pago.estado = 'procesando';
     return true;
   },
 
@@ -71,4 +48,5 @@ export const PaymentsRepository = {
       }
     }
     return { ok: true, pago };
-  } };
+  }
+};

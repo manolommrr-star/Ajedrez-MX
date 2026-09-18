@@ -1,20 +1,20 @@
 /**
- * Proveedor local de datos de torneos (prototipo).
+ * Proveedor local de datos de torneos (demo).
  *
- * Implementa la MISMA interfaz que tendrá FirestoreTournamentProvider:
+ * Implementa la MISMA interfaz que tendrá SupabaseTournamentProvider:
  *   getAll(), getById(id), search(filtros)
  * De esta forma, la vista nunca sabe de dónde vienen los datos y la
- * migración a Firestore no requiere tocar la interfaz.
+ * migración a Supabase no requiere tocar la interfaz.
  */
-import { MOCK_TOURNAMENTS } from '../data/mockTournaments.js';
+import { TORNEOS_DEMO } from '../data/mockRelacional.js';
 
 export const MockTournamentProvider = {
   async getAll() {
-    return MOCK_TOURNAMENTS.slice();
+    return TORNEOS_DEMO.slice();
   },
 
   async getById(id) {
-    return MOCK_TOURNAMENTS.find((t) => t.id === id);
+    return TORNEOS_DEMO.find((t) => t.id === id);
   },
 
   /**
@@ -26,7 +26,7 @@ export const MockTournamentProvider = {
   async search({ textoTorneo = '', ciudad = '', modalidad = '' } = {}) {
     const texto = textoTorneo.trim().toLowerCase();
 
-    return MOCK_TOURNAMENTS.filter((t) => {
+    return TORNEOS_DEMO.filter((t) => {
       const coincideTexto =
         !texto ||
         t.nombre.toLowerCase().includes(texto) ||

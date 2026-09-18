@@ -1,6 +1,5 @@
 /**
- * Router de la aplicación (hash history: compatible con GitHub Pages
- * y con el prototipo vanilla, que usaba el mismo esquema #/ruta).
+ * Router de la aplicación (hash history: compatible con GitHub Pages).
  */
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { Sesion } from '@/core/sesion.js';

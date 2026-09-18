@@ -51,17 +51,6 @@ const CODIGOS_FEDERACION = new Map([
   ['FMN', 'MEX']
 ]);
 
-/** Escapa un valor CSV (comas, comillas y saltos de línea). */
-/** Escapa caracteres XML especiales. */
-function escaparXml(valor) {
-  return String(valor ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, '&apos;');
-}
-
 /** Escapa caracteres XML para atributos. */
 function escaparAttrXml(valor) {
   return String(valor ?? "")
@@ -188,8 +177,6 @@ export const SwissManagerExport = {
     return { cuenta, advertencias };
   },
 
-  /** Descarga directa del TXT de importación en el navegador. */
-
   /**
    * Genera el contenido XML de importación para Swiss Manager.
    * Formato compatible con: File → Import → Import tournament with participants.
@@ -212,7 +199,7 @@ export const SwissManagerExport = {
         ' Lastname="' + escaparAttrXml(j.apellidos || '') + '"' +
         ' Firstname="' + escaparAttrXml(j.nombre || '') + '"' +
         ' Federation="' + federacionSwiss(j.federacion) + '"' +
-        ' Rating="' + (j.rating || '') + '"' +
+        ' Rating="' + eloSwiss(j.elo) + '"' +
         ' Birthday="' + fechaSwissIso(j.fechaNacimiento) + '"' +
         ' Title="' + tituloSwiss(j.titulo) + '"' +
         ' FIDEId="' + escaparAttrXml(j.fideId || '') + '"' +
@@ -293,7 +280,7 @@ export const SwissManagerExport = {
 
   /** Descarga directa del CSV de check-in en el navegador. */
   async descargarCheckin(torneoId, nombreTorneo) {
-        const csv = await this.generarCsvCheckin(torneoId);
+    const csv = await this.generarCsvCheckin(torneoId);
     const bytes = new TextEncoder().encode(csv);
     descargarBytes(bytes, nombreArchivo(nombreTorneo, 'checkin', 'csv'), 'text/csv;charset=utf-8');
   }

@@ -56,11 +56,6 @@ export const Sesion = {
     };
   },
 
-  /** ¿Hay sesión activa? */
-  estaActiva() {
-    return cuentaId !== null;
-  },
-
   /** Cierra la sesión y olvida la cuenta guardada. */
   cerrar() {
     cuentaId = null;

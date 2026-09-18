@@ -37,14 +37,11 @@ jobs:
         working-directory: app
         run: npm run build
 
-      - name: Combinar sitio (Vue en raiz + prototipo clasico en /clasico/)
+      - name: Preparar sitio (compilación Vue en la raíz)
         shell: bash
         run: |
-          mkdir -p staging/clasico
+          mkdir -p staging
           cp -r app/dist/* staging/
-          cp index.html staging/clasico/
-          cp -r css staging/clasico/css
-          cp -r js staging/clasico/js
 
       - name: Configurar Pages
         uses: actions/configure-pages@v5

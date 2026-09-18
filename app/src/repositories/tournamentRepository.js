@@ -2,8 +2,8 @@
  * Repositorio de torneos.
  *
  * Es la ÚNICA puerta de acceso a los datos de torneos desde las vistas.
- * En el prototipo se usa el proveedor local con datos ficticios;
- * cuando conectemos Firestore solo cambiará `provider` aquí.
+ * Hoy se usa el proveedor local con datos ficticios;
+ * cuando conectemos Supabase solo cambiará `provider` aquí.
  */
 import { MockTournamentProvider } from './mockTournamentProvider.js';
 

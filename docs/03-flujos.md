@@ -8,20 +8,21 @@
 5. Check-in → valida folio, cambia a "checkin"
 
 ## Flujo Organizador (panel)
-1. Accede (`#/acceder` → login como organizador demo)
-2. Dashboard (`#panel`) → estadísticas y acceso rápido
-3. Gestiona torneos (`#panel/torneos`) → CRUD, publicar
-4. Ver inscripciones (`#panel/torneo/:id/inscripciones`) → tabla con JOINs
-5. Ver pagos (`#panel/pagos`) → lista, simular webhook, reembolsar
-6. Check-in (`#/panel/qr`) → validar folios
-7. Reportar resultados → generar CSV (Swiss Manager)
+1. Accede (`#/acceder` → login con cuenta de organizador)
+2. Dashboard (`#/panel`) → estadísticas y acceso rápido
+3. Gestiona torneos (`#/panel/torneos`) → publicar/despublicar, duplicar, crear y editar
+4. Ver inscripciones (`#/panel/torneo/:id` → pestaña Inscripciones) → tabla con JOINs y cambio de estado
+5. Ver pagos (`#/panel/torneo/:id` → pestaña Pagos) → lista, reembolsar, pago manual
+6. Check-in (`#/panel/torneo/:id` → pestaña Check-in) → marcar asistencia
+7. Exportar participantes → TXT/XML/CSV (Swiss Manager) desde la pestaña Participantes
+   (el avance de QR sigue siendo una maqueta visual en `#/panel/configuracion`)
 
 ## Flujo Demo
 **Usuarios demo:**
 - Jugador: `ana.torres@correo.mx` (password: `demo1234`)
 - Organizador: `contacto@ajedrezxalapa.mx` (password: `demo1234`)
 
-**Torneos demo:** 10 torneos publicados (ver `mockTournaments.js`)
+**Torneos demo:** 12 torneos (11 publicados + 1 borrador) en `app/src/data/mockRelacionalTorneos.js`
 
 ## Estados de inscripción
 ```

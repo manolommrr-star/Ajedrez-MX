@@ -2,10 +2,10 @@
  * Repositorio del panel de organizador (Etapa 2 · relacional, objetivo Supabase).
  *
  * Capa única que usa el panel. Ahora es ASÍNCRONA y delega el dominio
- * en js/core/; cuando se conecte Supabase solo cambiará el origen
+ * en core/; cuando se conecte Supabase solo cambiará el origen
  * de datos interno de cada repositorio de core, no esta interfaz.
  */
-import { ORGANIZADOR_DEMO, TORNEOS_DEMO, EVENTOS_DEMO } from '../data/mockRelacional.js';
+import { ORGANIZADOR_DEMO, TORNEOS_DEMO } from '../data/mockRelacional.js';
 import { generarId } from '../utils/ids.js';
 import { EventsRepository } from '../core/eventsRepository.js';
 import { RegistrationsRepository } from '../core/registrationsRepository.js';
@@ -93,28 +93,6 @@ export const OrganizadorRepository = {
     return copia;
   },
 
-  /** Crea un evento de demostración (solo demo local). */
-  async crearEvento(nombre) {
-    const perfil = await this.getPerfil();
-    const evento = {
-      id: generarId('evento'),
-      organizadorId: perfil.id,
-      nombre,
-      descripcion: '',
-      convocatoriaUrl: '',
-      sede: '',
-      direccion: '',
-      ciudad: '',
-      estado: '',
-      fechaInicio: '',
-      fechaFin: '',
-      estadoPublicacion: 'borrador',
-      fechaCreacion: new Date().toISOString().slice(0, 10)
-    };
-    EVENTOS_DEMO.push(evento);
-    return evento;
-  },
-
   /** Participantes de un torneo (JOIN inscripción + jugador). */
   async getParticipantes(torneoId) {
     return RegistrationsRepository.getParticipantes(torneoId);
@@ -131,11 +109,6 @@ export const OrganizadorRepository = {
   /** Reembolsa un pago (demo local: cambia estado en memoria). */
   async reembolsarPago(id) {
     return PaymentsRepository.reembolsar(id);
-  },
-
-  /** Marca un pago pendiente como procesando (demo local). */
-  async reintentarPago(id) {
-    return PaymentsRepository.marcarProcesando(id);
   },
 
   /**
@@ -262,31 +235,5 @@ export const OrganizadorRepository = {
   /** Cambia el estado de una inscripción si la transición es válida. */
   async actualizarEstadoInscripcion(regId, nuevoEstado) {
     return RegistrationsRepository.actualizarEstado(regId, nuevoEstado);
-  },
-
-  /** Cifras para las tarjetas del resumen. */
-  async getResumen() {
-    const torneos = await this.getTorneos();
-    const pagos = await this.getPagos();
-
-    // Inscripciones registradas en los torneos del organizador.
-    let totalInscripciones = 0;
-    let pendientesPago = 0;
-    for (const torneo of torneos) {
-      const participantes = await RegistrationsRepository.getParticipantes(torneo.id);
-      totalInscripciones += participantes.length;
-      pendientesPago += participantes.filter(
-        (p) => p.estado === 'pago_pendiente' || p.estado === 'pago_en_revision'
-      ).length;
-    }
-
-    return {
-      torneosActivos: torneos.filter((t) => t.estadoPublicacion === 'publicado').length,
-      inscritos: torneos.reduce((total, t) => total + t.inscritos, 0),
-      cupo: torneos.reduce((total, t) => total + t.cupo, 0),
-      ingresosCobrados: pagos.filter((p) => p.estado === 'pagado').reduce((sum, p) => sum + p.monto, 0),
-      pendientesPago,
-      totalInscripciones
-    };
   }
 };

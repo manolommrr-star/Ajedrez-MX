@@ -71,7 +71,7 @@ Si algo falla, anota qué campo quedó mal y ajustamos el orden/formato del TXT 
 
 ## Notas técnicas
 
-- Codificador cp1252: `app/src/utils/cp1252.js` (y espejo en `js/utils/` para el prototipo). Caracteres no representables → `?`.
+- Codificador cp1252: `app/src/utils/cp1252.js`. Caracteres no representables → `?`.
 - El CSV "Excel" (UTF-8 con BOM) sigue disponible para hojas de cálculo; el TXT es específicamente para Swiss Manager.
 - Smoke test: `app/.smoke/smoke-swiss.mjs` (29 validaciones de bytes, columnas, normalizadores, filtro de estados y XML).
 
@@ -81,21 +81,27 @@ Además del TXT, la app genera un archivo `torneo_<nombretorneo>.xml` con estruc
 
 | Atributo del `<Player>` | Origen | Normalización |
 |---|---|---|
-| `name` | `apellidos + nombre` | apellidos y nombre escapados en XML |
-| `federation` | `jugador.federacion` | `FENAMAC` → `MEX`; vacío → `MEX`; códigos de 3 letras se respetan |
-| `id` | `jugador.fideId` | FIDE ID (puede estar vacío) |
-| `title` | `jugador.titulo` | solo títulos FIDE (GM/IM/FM/CM/W*); `MN` u otros nacionales → vacío |
-| `gender` | `jugador.sexo` | `M`/`F`; sin datos → vacío |
-| `birthday` | `jugador.fechaNacimiento` | `1994-05-12` → `12.05.1994` |
-| `club` | `jugador.club` | escapado en XML |
+| `PlayerUniqueId` | índice de la lista (1..n) | — |
+| `Lastname` | `jugador.apellidos` | escapado en XML |
+| `Firstname` | `jugador.nombre` | escapado en XML |
+| `Federation` | `jugador.federacion` | `FENAMAC` → `MEX`; vacío → `MEX`; códigos de 3 letras se respetan |
+| `Rating` | `jugador.rating` | vacío si no hay |
+| `Birthday` | `jugador.fechaNacimiento` | `1994-05-12` → `19940512` |
+| `Title` | `jugador.titulo` | solo títulos FIDE (GM/IM/FM/CM/W*); `MN` u otros nacionales → vacío |
+| `FIDEId` | `jugador.fideId` | FIDE ID (puede estar vacío) |
+| `NatId` | — | siempre vacío |
+| `Gender` | `jugador.sexo` | `M`/`F`; sin datos → vacío |
+| `Club` | `jugador.club` | escapado en XML |
 
 **Ejemplo de XML generado:**
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Players>
-    <Player name="Torres Ana" federation="MEX" id="5123456" live="" gender="" birthday="12.05.1994" club="Club de Ajedrez Xalapa" />
-    <Player name="Ramírez Luis" federation="MEX" id="5123457" live="" gender="" birthday="03.11.2001" club="Club Coatepec" />
+    <Player PlayerUniqueId="1" Lastname="Torres" Firstname="Ana" Federation="MEX" Rating="1876" Birthday="19940512" Title="" FIDEId="5123456" NatId="" Gender="" Club="Club de Ajedrez Xalapa" />
+    <Player PlayerUniqueId="2" Lastname="Ramírez" Firstname="Luis" Federation="MEX" Rating="1608" Birthday="20011103" Title="" FIDEId="5123457" NatId="" Gender="" Club="Club Coatepec" />
     ...
 </Players>
 ```
+
+Solo se exportan las inscripciones en estado **pagada, confirmada o checkin**.

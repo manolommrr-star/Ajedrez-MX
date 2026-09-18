@@ -1,15 +1,15 @@
+<script setup>
 /**
  * Insignia de estado (inscripción, pago o publicación) con el color
- * correspondiente. Reemplaza a insignia() del prototipo vanilla.
+ * correspondiente.
  */
-<script setup>
 import { computed } from 'vue';
 
 const props = defineProps({
   estado: { type: String, default: '' }
 });
 
-/** Misma tabla de colores que el prototipo (ui/components.js). */
+/** Tabla de colores por estado. */
 const CLASES = {
   pagado: 'insignia-exito',
   publicado: 'insignia-exito',

@@ -1,27 +1,14 @@
 /**
  * Núcleo de dominio: INSCRIPCIONES (jugador × torneo).
  *
- * Incluye la MÁQUINA DE ESTADOS de la inscripción. Los estados no están
- * hardcodeados en la interfaz: se declaran aquí y la UI los lee.
+ * Incluye la MÁQUINA DE ESTADOS de la inscripción: las transiciones válidas
+ * se declaran aquí y la UI las respeta al pedir cambios de estado.
  *
  * En Supabase estas transiciones se validarán en edge functions
  * (service_role) y se auditarán en registration_historial.
  */
 import { INSCRIPCIONES_DEMO, JUGADORES_DEMO, TORNEOS_DEMO } from '../data/mockRelacional.js';
 import { generarId } from '../utils/ids.js';
-
-/** Estados posibles de una inscripción (flexibles, no en la UI). */
-export const ESTADOS_INSCRIPCION = [
-  'pendiente',
-  'pago_pendiente',
-  'pago_en_revision',
-  'pagada',
-  'confirmada',
-  'cancelada',
-  'rechazada',
-  'checkin',
-  'retirada'
-];
 
 /** Transiciones permitidas entre estados. */
 const TRANSICIONES_ESTADO = {
@@ -153,11 +140,6 @@ export const RegistrationsRepository = {
     return t
       ? { id: t.id, nombre: t.nombre, fecha: t.fecha, ciudad: t.ciudad, estado: t.estado, modalidad: t.modalidad }
       : null;
-  },
-
-  /** Historial de una inscripción (mock de registration_historial). */
-  async getHistorial(regId) {
-    return HISTORIAL_DEMO.filter((h) => h.registrationId === regId);
   },
 
   /** Registra un pago en efectivo u otro medio y marca la inscripción como pagada. */

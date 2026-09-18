@@ -31,13 +31,6 @@ const EXTRAS = new Map([
   [0x017E, 0x9E], [0x0178, 0x9F]
 ]);
 
-/** ¿Puede representarse el carácter en cp1252? */
-export function esRepresentable(cp) {
-  if (cp < 0x80) return true; // ASCII
-  if (cp >= 0xA0 && cp <= 0xFF) return true; // Latin-1
-  return EXTRAS.has(cp);
-}
-
 /** Convierte un string UTF-8 a un Uint8Array en codificación Windows-1252. */
 export function aCp1252(texto) {
   const bytes = [];

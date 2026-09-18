@@ -49,15 +49,6 @@ export const CATALOGO_CATEGORIAS = [
 ];
 
 /**
- * Devuelve una copia de las categorías base filtradas opcionalmente por grupo.
- * Útil para el formulario de creación del torneo.
- */
-export function categoriasPorGrupo(grupo = null) {
-  if (!grupo) return CATALOGO_CATEGORIAS.slice();
-  return CATALOGO_CATEGORIAS.filter((c) => c.grupo === grupo);
-}
-
-/**
  * Construye un array de categorías para un torneo a partir del catálogo base.
  * El organizador selecciona qué categorías usar y puede personalizar nombre y precio.
  *

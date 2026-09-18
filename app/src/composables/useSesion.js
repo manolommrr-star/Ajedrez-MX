@@ -1,5 +1,5 @@
 /**
- * Estado reactivo de la sesión (envuelve js/core/sesion.js).
+ * Estado reactivo de la sesión (envuelve core/sesion.js).
  * Cualquier componente puede leer `estado` o los computed de rol.
  */
 import { reactive, computed } from 'vue';
