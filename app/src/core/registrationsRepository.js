@@ -12,7 +12,7 @@ import { generarId } from '../utils/ids.js';
 
 /** Transiciones permitidas entre estados. */
 const TRANSICIONES_ESTADO = {
-  pendiente: ['pago_pendiente', 'cancelada', 'rechazada'],
+  pendiente: ['pago_pendiente', 'pagada', 'cancelada', 'rechazada'],
   pago_pendiente: ['pago_en_revision', 'pagada', 'cancelada'],
   pago_en_revision: ['pagada', 'rechazada', 'cancelada'],
   pagada: ['confirmada', 'retirada'],
@@ -112,12 +112,13 @@ export const RegistrationsRepository = {
       eventoId: torneo.eventoId || null,
       categoria: categoriaTorneo.nombre,
       precio: categoriaTorneo.precio,
-      estado: 'pendiente',
+      // Con pago en línea la inscripción nace esperando el pago.
+      estado: 'pago_pendiente',
       fechaCreacion: new Date().toISOString().slice(0, 10)
     };
     INSCRIPCIONES_DEMO.push(inscripcion);
     torneo.inscritos = (torneo.inscritos || 0) + 1;
-    registrarHistorial(inscripcion.id, null, 'pendiente');
+    registrarHistorial(inscripcion.id, null, 'pago_pendiente');
     return { ok: true, inscripcion };
   },
 
@@ -140,17 +141,5 @@ export const RegistrationsRepository = {
     return t
       ? { id: t.id, nombre: t.nombre, fecha: t.fecha, ciudad: t.ciudad, estado: t.estado, modalidad: t.modalidad }
       : null;
-  },
-
-  /** Registra un pago en efectivo u otro medio y marca la inscripción como pagada. */
-  async registrarPagoManual({ torneoId, eventoId = null, playerId, categoria, precio }) {
-    const id = generarId('reg');
-    INSCRIPCIONES_DEMO.push({
-      id, playerId, torneoId, eventoId, categoria,
-      precio: Number(precio) || 0,
-      estado: 'pagada',
-      fechaCreacion: new Date().toISOString().slice(0, 10)
-    });
-    return id;
   }
 };

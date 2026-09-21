@@ -32,8 +32,7 @@ const rutas = [
       { path: 'torneos', name: 'panel-torneos', component: () => import('@/views/panel/TorneosView.vue') },
       { path: 'crear', name: 'panel-crear', component: () => import('@/views/panel/CrearTorneoView.vue') },
       { path: 'torneo/:id/editar', name: 'panel-editar', component: () => import('@/views/panel/CrearTorneoView.vue'), props: true },
-      { path: 'torneo/:id', name: 'panel-torneo-detalle', component: () => import('@/views/panel/TorneoDetalleView.vue'), props: true },
-      { path: 'configuracion', name: 'panel-configuracion', component: () => import('@/views/panel/ConfiguracionView.vue') }
+      { path: 'torneo/:id', name: 'panel-torneo-detalle', component: () => import('@/views/panel/TorneoDetalleView.vue'), props: true }
     ]
   },
 

@@ -13,7 +13,7 @@ import { notificar } from '@/composables/useAviso.js';
 import EstadoInsignia from '@/components/EstadoInsignia.vue';
 
 const ruta = useRoute();
-const { estado } = useSesion();
+const { estado, asegurarSesion } = useSesion();
 
 const torneo = ref(null);
 const inscripcion = ref(null);
@@ -50,6 +50,7 @@ const caracteristicas = computed(() => {
 
 onMounted(async () => {
   try {
+    await asegurarSesion();
     torneo.value = await TournamentRepository.getById(ruta.params.id);
     if (torneo.value && estado.jugador) {
       const mias = await RegistrationsRepository.getPorJugador(estado.jugador.id);

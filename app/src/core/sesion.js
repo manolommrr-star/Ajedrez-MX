@@ -5,7 +5,7 @@
  * se reemplaza por supabase.auth (sesión real); la interfaz no cambia.
  * Según el rol de la cuenta expone el perfil de jugador o de organizador.
  */
-import { CuentasRepository } from './cuentasRepository.js';
+import { CuentasRepository, cuentasListas } from './cuentasRepository.js';
 import { PlayersRepository } from './playersRepository.js';
 
 const CLAVE_SESION = 'ajedrezmx-cuenta-demo';
@@ -23,6 +23,7 @@ function cargarGuardado() {
 export const Sesion = {
   /** Abre la sesión de una cuenta (demo) y la recuerda. */
   async iniciar(idCuenta) {
+    await cuentasListas;
     const cuenta = await CuentasRepository.getPorId(idCuenta);
     if (!cuenta) return null;
     cuentaId = idCuenta;
@@ -30,12 +31,18 @@ export const Sesion = {
     return cuenta;
   },
 
-  /** Cuenta con sesión activa, o null. */
+  /**
+   * Cuenta con sesión activa, o null.
+   *
+   * Espera a que el repositorio termine de restaurar las cuentas guardadas y NO
+   * borra la sesión cuando no encuentra la cuenta: antes, una lectura temprana
+   * (justo al recargar) devolvía null y `cerrar()` eliminaba la sesión
+   * guardada, dejando al usuario deslogueado sin motivo aparente.
+   */
   async getCuenta() {
+    await cuentasListas;
     if (!cuentaId) return null;
-    const cuenta = await CuentasRepository.getPorId(cuentaId);
-    if (!cuenta) this.cerrar();
-    return cuenta;
+    return (await CuentasRepository.getPorId(cuentaId)) || null;
   },
 
   /** Perfil de jugador vinculado a la sesión (solo cuentas rol player). */

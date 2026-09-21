@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { TournamentRepository } from '@/repositories/tournamentRepository.js';
 import { RegistrationsRepository } from '@/core/registrationsRepository.js';
 import { CuentasRepository } from '@/core/cuentasRepository.js';
+import { PaymentsRepository } from '@/core/paymentsRepository.js';
 import { Formatters } from '@/utils/formatters.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
@@ -15,7 +16,7 @@ import EstadoInsignia from '@/components/EstadoInsignia.vue';
 
 const ruta = useRoute();
 const router = useRouter();
-const { estado, refrescarSesion } = useSesion();
+const { estado, asegurarSesion, refrescarSesion } = useSesion();
 
 const torneo = ref(null);
 const inscripcion = ref(null);
@@ -33,6 +34,7 @@ const precioSeleccionado = computed(() => {
 
 onMounted(async () => {
   try {
+    await asegurarSesion();
     torneo.value = await TournamentRepository.getById(ruta.params.id);
     if (torneo.value) {
       categoria.value = torneo.value.categorias[0]?.nombre || '';
@@ -94,14 +96,22 @@ async function inscribirse() {
     torneoId: torneo.value.id,
     categoria: categoria.value
   });
-  enviando.value = false;
 
   if (!resultado.ok) {
+    enviando.value = false;
     notificar(resultado.motivo);
     return;
   }
-  notificar('Inscripción registrada · estado pendiente.');
-  router.push('/mis-inscripciones');
+
+  // Pago en línea: se genera el folio y se lleva al jugador al checkout.
+  const pago = await PaymentsRepository.crearParaInscripcion({
+    inscripcion: resultado.inscripcion,
+    torneo: torneo.value,
+    jugador: estado.jugador
+  });
+  enviando.value = false;
+  notificar('Inscripción registrada · continúa con el pago en línea.');
+  router.push(pago ? `/pagar/${encodeURIComponent(pago.folio)}` : '/mis-inscripciones');
 }
 </script>
 

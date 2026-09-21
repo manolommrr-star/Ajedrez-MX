@@ -24,12 +24,26 @@ export async function refrescarSesion() {
   return estado.cuenta;
 }
 
+/**
+ * Garantiza que el estado de sesión esté leído antes de decidir con él.
+ *
+ * Los `onMounted` de los componentes hijos se ejecutan ANTES que el del
+ * componente raíz, así que una vista podía leer `estado.jugador` cuando aún era
+ * null: mostraba "Inscribirme" a quien ya estaba inscrito o el formulario de
+ * alta de perfil a quien ya tenía sesión.
+ */
+export async function asegurarSesion() {
+  if (estado.listo) return estado.cuenta;
+  return refrescarSesion();
+}
+
 export function useSesion() {
   return {
     estado,
     esOrganizador,
     esJugador,
     refrescarSesion,
+    asegurarSesion,
 
     /** Inicia sesión con el id de una cuenta (demo). */
     async iniciarSesion(cuentaId) {

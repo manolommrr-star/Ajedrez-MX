@@ -5,31 +5,42 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { RegistrationsRepository } from '@/core/registrationsRepository.js';
+import { PaymentsRepository } from '@/core/paymentsRepository.js';
 import { Formatters } from '@/utils/formatters.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 import EstadoInsignia from '@/components/EstadoInsignia.vue';
 import TablaBase from '@/components/TablaBase.vue';
 
-const { estado } = useSesion();
+const { estado, asegurarSesion } = useSesion();
 const inscripciones = ref([]);
 const cargando = ref(true);
 
 const columnas = ['Torneo', 'Fecha', 'Categoría', 'Cuota', 'Estado', 'Inscrito', 'Acciones'];
 
 onMounted(async () => {
+  await asegurarSesion();
   if (!estado.jugador) {
     cargando.value = false;
     return;
   }
-  const mias = await RegistrationsRepository.getPorJugador(estado.jugador.id);
-  inscripciones.value = await Promise.all(
-    mias
-      .slice()
-      .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))
-      .map(async (r) => ({ ...r, torneo: await RegistrationsRepository.getInfoTorneo(r.torneoId) }))
-  );
-  cargando.value = false;
+  try {
+    const mias = await RegistrationsRepository.getPorJugador(estado.jugador.id);
+    inscripciones.value = await Promise.all(
+      mias
+        .slice()
+        .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))
+        .map(async (r) => ({
+          ...r,
+          torneo: await RegistrationsRepository.getInfoTorneo(r.torneoId),
+          pago: await PaymentsRepository.getPorInscripcion(r.id)
+        }))
+    );
+  } catch {
+    notificar('No fue posible cargar tus inscripciones.');
+  } finally {
+    cargando.value = false;
+  }
 });
 
 const nombreJugador = computed(() =>
@@ -72,10 +83,17 @@ async function cancelar(r) {
           <td data-col="Estado"><EstadoInsignia :estado="r.estado" /></td>
           <td data-col="Inscrito">{{ Formatters.fechaLarga(r.fechaCreacion) }}</td>
           <td data-col="Acciones">
-            <button v-if="cancelable(r)" type="button" class="boton boton-texto" @click="cancelar(r)">
-              Cancelar
-            </button>
-            <span v-else class="texto-suave">—</span>
+            <span class="chips-fila">
+              <RouterLink
+                v-if="r.pago && r.pago.estado === 'pendiente'"
+                class="boton boton-verde boton-sm"
+                :to="`/pagar/${encodeURIComponent(r.pago.folio)}`"
+              >Pagar</RouterLink>
+              <button v-if="cancelable(r)" type="button" class="boton boton-texto" @click="cancelar(r)">
+                Cancelar
+              </button>
+              <span v-if="!cancelable(r) && !(r.pago && r.pago.estado === 'pendiente')" class="texto-suave">—</span>
+            </span>
           </td>
         </tr>
       </tabla-base>
