@@ -6,7 +6,6 @@
  * de datos interno de cada repositorio de core, no esta interfaz.
  */
 import { ORGANIZADOR_DEMO, TORNEOS_DEMO } from '../data/mockRelacional.js';
-import { generarId } from '../utils/ids.js';
 import { EventsRepository } from '../core/eventsRepository.js';
 import { RegistrationsRepository } from '../core/registrationsRepository.js';
 import { PaymentsRepository } from '../core/paymentsRepository.js';
@@ -77,10 +76,18 @@ export const OrganizadorRepository = {
     const perfil = await this.getPerfil();
     const torneo = TORNEOS_DEMO.find((t) => t.id === id && t.organizadorId === perfil.id);
     if (!torneo) return null;
+    // Id único: la primera copia es `<id>-copia`, las siguientes añaden sufijo.
+    const base = `${torneo.id}-copia`;
+    let idCopia = base;
+    let n = 2;
+    while (TORNEOS_DEMO.some((t) => t.id === idCopia)) {
+      idCopia = `${base}-${n}`;
+      n += 1;
+    }
     const copia = {
       ...torneo,
-      categorias: torneo.categorias.map((c) => ({ ...c })),
-      id: `${torneo.id}-copia`,
+      categorias: (torneo.categorias || []).map((c) => ({ ...c })),
+      id: idCopia,
       nombre: `${torneo.nombre} (copia)`,
       estadoPublicacion: 'borrador',
       inscritos: 0,
@@ -89,7 +96,7 @@ export const OrganizadorRepository = {
       chessResultsUrl: null,
       fechaCreacion: new Date().toISOString().slice(0, 10)
     };
-    if (!TORNEOS_DEMO.some((t) => t.id === copia.id)) TORNEOS_DEMO.push(copia);
+    TORNEOS_DEMO.push(copia);
     return copia;
   },
 
@@ -106,51 +113,17 @@ export const OrganizadorRepository = {
     return pagos.filter((p) => propios.has(p.torneoId));
   },
 
-  /** Reembolsa un pago (demo local: cambia estado en memoria). */
-  async reembolsarPago(id) {
-    return PaymentsRepository.reembolsar(id);
-  },
-
-  /**
-   * Registra un pago manual (efectivo) del organizador:
-   * crea la inscripción en estado pagada + su pago asociado.
-   */
-  async registrarPagoManual({ torneoId, eventoId = null, playerId, categoria, precio }) {
-    const regId = await RegistrationsRepository.registrarPagoManual({
-      torneoId, eventoId, playerId, categoria, precio
-    });
-    const { JUGADORES_DEMO } = await import('../data/mockRelacional.js');
-    const jugador = JUGADORES_DEMO.find((j) => j.id === playerId);
-    const { TORNEOS_DEMO: T } = await import('../data/mockRelacional.js');
-    const torneo = T.find((t) => t.id === torneoId);
-    const { PAGOS_DEMO } = await import('../data/mockRelacional.js');
-    PAGOS_DEMO.push({
-      id: generarId('pay'),
-      folio: `FOLIO-${1000 + PAGOS_DEMO.length + 1}`,
-      registrationId: regId,
-      torneoId,
-      playerId,
-      torneo: torneo ? torneo.nombre : torneoId,
-      jugador: jugador ? `${jugador.apellidos} ${jugador.nombre}` : playerId,
-      monto: Number(precio) || 0,
-      proveedor: 'Efectivo',
-      estado: 'pagado',
-      fecha: new Date().toISOString().slice(0, 10)
-    });
-    // Actualiza el contador de inscritos del torneo (demo local).
-    if (torneo) torneo.inscritos = (torneo.inscritos || 0) + 1;
-    return regId;
-  },
-
-  /** Exporta todos los pagos a CSV (demo: descarga en navegador). */
+  /** Exporta a CSV los pagos de MIS torneos (demo: descarga en navegador). */
   async exportarPagosCsv() {
-    const { PAGOS_DEMO } = await import('../data/mockRelacional.js');
+    const pagos = await this.getPagos();
     const cabecera = 'Folio,Torneo,Jugador,Monto,Proveedor,Estado,Fecha';
+    // Neutraliza fórmulas de hoja de cálculo (CSV injection).
     const esc = (v) => {
       const t = String(v ?? '');
-      return /[",\n]/.test(t) ? `"${t.replaceAll('"', '""')}"` : t;
+      const seguro = /^[=+\-@\t\r]/.test(t) ? `'${t}` : t;
+      return /[",\n]/.test(seguro) ? `"${seguro.replaceAll('"', '""')}"` : seguro;
     };
-    const cuerpo = PAGOS_DEMO.map((p) =>
+    const cuerpo = pagos.map((p) =>
       [p.folio, p.torneo, p.jugador, p.monto, p.proveedor, p.estado, p.fecha].map(esc).join(',')
     ).join('\r\n');
     const blob = new Blob([`﻿${cabecera}\r\n${cuerpo}`], { type: 'text/csv;charset=utf-8' });
@@ -218,7 +191,7 @@ export const OrganizadorRepository = {
       cupo: datos.cupo ?? 32,
       inscritos: 0,
       categorias: datos.categorias,
-      organizador: { nombre: ORGANIZADOR_DEMO.nombre, email: ORGANIZADOR_DEMO.email },
+      organizador: { nombre: perfil.nombre, email: perfil.email },
       reglamentoUrl: '',
       imagen: '',
       destacado: !!datos.destacado,

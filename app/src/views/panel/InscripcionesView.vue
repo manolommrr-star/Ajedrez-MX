@@ -17,32 +17,38 @@ const cargando = ref(true);
 
 const columnas = ['Jugador', 'Categoría', 'Cuota', 'Estado', 'Fecha', 'Acciones'];
 
+/**
+ * Acciones administrativas disponibles para el organizador.
+ * El cobro y la confirmación NO están aquí: con pago en línea los confirma la
+ * pasarela (webhook), no una persona.
+ */
 const MAPA = {
-  'validar-pago': 'pagada', 'marcar-revision': 'pago_en_revision',
-  confirmar: 'confirmada', checkin: 'checkin',
-  cancelar: 'cancelada', rechazar: 'rechazada', retirar: 'retirada'
+  cancelar: 'cancelada',
+  retirar: 'retirada'
 };
 
 const pendientes = computed(() => participantes.value.filter(
-  (p) => p.estado === 'pago_pendiente' || p.estado === 'pago_en_revision'
+  (p) => ['pendiente', 'pago_pendiente', 'pago_en_revision'].includes(p.estado)
 ).length);
 
 async function cargar() {
-  torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
-  if (torneo.value) {
-    participantes.value = await OrganizadorRepository.getParticipantes(props.id);
+  try {
+    torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
+    if (torneo.value) {
+      participantes.value = await OrganizadorRepository.getParticipantes(props.id);
+    }
+  } catch {
+    notificar('No fue posible cargar las inscripciones.');
+  } finally {
+    cargando.value = false;
   }
-  cargando.value = false;
 }
 
 onMounted(cargar);
 
 function accionesDe(p) {
-  if (p.estado === 'pago_pendiente') return [['marcar-revision', 'Marcar en revisión'], ['validar-pago', 'Validar pago'], ['cancelar', 'Cancelar']];
-  if (p.estado === 'pago_en_revision') return [['validar-pago', 'Validar pago'], ['rechazar', 'Rechazar']];
-  if (p.estado === 'pagada') return [['confirmar', 'Confirmar'], ['retirar', 'Retirar']];
-  if (p.estado === 'confirmada') return [['checkin', 'Check-in'], ['retirar', 'Retirar'], ['cancelar', 'Cancelar']];
-  if (p.estado === 'pendiente') return [['cancelar', 'Cancelar']];
+  if (['pendiente', 'pago_pendiente', 'pago_en_revision'].includes(p.estado)) return [['cancelar', 'Cancelar']];
+  if (p.estado === 'pagada' || p.estado === 'confirmada') return [['retirar', 'Retirar']];
   return [];
 }
 
@@ -63,8 +69,8 @@ async function aplicar(p, accion) {
     <RouterLink class="enlace-volver" :to="{ name: 'panel-torneos' }">← Mis torneos</RouterLink>
     <h1 class="titulo-pagina">Inscripciones · {{ torneo.nombre }}</h1>
     <p class="subtitulo-pagina">
-      Valida pagos y confirma jugadores.
-      <strong v-if="pendientes">Tienes {{ pendientes }} pago(s) por revisar.</strong>
+      Seguimiento de inscripciones: el pago en línea confirma al jugador automáticamente.
+      <strong v-if="pendientes">Tienes {{ pendientes }} inscripción(es) esperando su pago.</strong>
     </p>
 
     <div class="chips-fila">

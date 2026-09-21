@@ -6,9 +6,9 @@ import { onMounted } from 'vue';
 import AppBarra from '@/components/AppBarra.vue';
 import AppPie from '@/components/AppPie.vue';
 import AvisoToast from '@/components/AvisoToast.vue';
-import { refrescarSesion } from '@/composables/useSesion.js';
+import { asegurarSesion } from '@/composables/useSesion.js';
 
-onMounted(refrescarSesion);
+onMounted(asegurarSesion);
 </script>
 
 <template>

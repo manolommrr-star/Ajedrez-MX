@@ -27,9 +27,14 @@ const filtrados = computed(() => {
 });
 
 onMounted(async () => {
-  torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
-  if (torneo.value) participantes.value = await OrganizadorRepository.getParticipantes(props.id);
-  cargando.value = false;
+  try {
+    torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
+    if (torneo.value) participantes.value = await OrganizadorRepository.getParticipantes(props.id);
+  } catch {
+    notificar('No fue posible cargar los participantes.');
+  } finally {
+    cargando.value = false;
+  }
 });
 
 async function exportarSwiss() {

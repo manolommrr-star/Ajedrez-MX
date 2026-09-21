@@ -13,6 +13,7 @@ const props = defineProps({
 const CLASES = {
   pagado: 'insignia-exito',
   publicado: 'insignia-exito',
+  pagada: 'insignia-exito',
   confirmada: 'insignia-exito',
   checkin: 'insignia-exito',
   procesando: 'insignia-info',

@@ -4,6 +4,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
 import { RegistrationsRepository } from '@/core/registrationsRepository.js';
+import { notificar } from '@/composables/useAviso.js';
 
 const router = useRouter();
 const perfil = ref(null);
@@ -12,18 +13,23 @@ const estadisticas = ref({});
 const cargando = ref(true);
 
 onMounted(async () => {
-  perfil.value = await OrganizadorRepository.getPerfil();
-  torneos.value = await OrganizadorRepository.getTorneos();
-  // getPorTorneo es asíncrono: se resuelven una vez y se guardan en un ref.
-  for (const t of torneos.value) {
-    const regs = await RegistrationsRepository.getPorTorneo(t.id);
-    estadisticas.value[t.id] = {
-      confirmados: regs.filter((r) => r.estado === 'confirmada' || r.estado === 'checkin').length,
-      pendientes: regs.filter((r) =>
-        ['pendiente', 'pago_pendiente', 'pago_en_revision'].includes(r.estado)).length
-    };
+  try {
+    perfil.value = await OrganizadorRepository.getPerfil();
+    torneos.value = await OrganizadorRepository.getTorneos();
+    // getPorTorneo es asíncrono: se resuelven una vez y se guardan en un ref.
+    for (const t of torneos.value) {
+      const regs = await RegistrationsRepository.getPorTorneo(t.id);
+      estadisticas.value[t.id] = {
+        confirmados: regs.filter((r) => r.estado === 'confirmada' || r.estado === 'checkin').length,
+        pendientes: regs.filter((r) =>
+          ['pendiente', 'pago_pendiente', 'pago_en_revision'].includes(r.estado)).length
+      };
+    }
+  } catch {
+    notificar('No fue posible cargar el panel.');
+  } finally {
+    cargando.value = false;
   }
-  cargando.value = false;
 });
 
 const hoy = computed(() => new Date().toISOString().slice(0, 10));
@@ -43,10 +49,8 @@ function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id
     </header>
 
     <div class="panel-fila-accesos">
-      <RouterLink :to="{name:'panel-torneos'}" class="acceso">📋 Mis torneos</RouterLink>
-      <RouterLink :to="{name:'panel-crear'}" class="acceso">➕ Crear torneo</RouterLink>
-      <RouterLink :to="{name:'panel-configuracion'}" class="acceso">📊 Reportes</RouterLink>
-      <RouterLink :to="{name:'panel-configuracion'}" class="acceso">⚙️ Configuración</RouterLink>
+      <RouterLink :to="{name:'panel-torneos'}" class="acceso">Mis torneos</RouterLink>
+      <RouterLink :to="{name:'panel-crear'}" class="acceso">Crear torneo</RouterLink>
     </div>
 
     <section class="panel-seccion" v-if="proximos.length">

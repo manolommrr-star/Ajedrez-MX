@@ -85,6 +85,7 @@ export const CuentasRepository = {
    * Con Supabase: supabase.auth.signUp + fila en profiles con el mismo rol.
    */
   async registrar({ rol, nombre, apellidos = '', email, clave, extras = {} }) {
+    await cuentasListas;
     const correo = String(email || '').trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
       return { ok: false, motivo: 'Escribe un correo válido.' };
@@ -128,6 +129,7 @@ export const CuentasRepository = {
 
   /** Verifica correo + contraseña (demo). */
   async acceder({ email, clave }) {
+    await cuentasListas;
     const correo = String(email || '').trim().toLowerCase();
     const cuenta = CUENTAS.find((c) => c.email === correo);
     if (!cuenta) return { ok: false, motivo: 'Correo o contraseña incorrectos.' };
@@ -137,23 +139,33 @@ export const CuentasRepository = {
   },
 
   async getPorId(id) {
+    await cuentasListas;
     return CUENTAS.find((c) => c.id === id) || null;
   },
 
   async existeEmail(email) {
+    await cuentasListas;
     const correo = String(email || '').trim().toLowerCase();
     return CUENTAS.some((c) => c.email === correo);
   },
 
   /** Cuenta demo preinstalada por rol (acceso rápido sin contraseña). */
   async getDemo(rol) {
+    await cuentasListas;
     return CUENTAS.find((c) => c.demo && c.rol === rol) || null;
   }
 };
 
-// Contraseña demo para las cuentas preinstaladas + restauración de cuentas.
-// Se ejecuta en segundo plano (sin top-level await, que no compila en Vite).
-(async () => {
+/**
+ * Preparación inicial de las cuentas: contraseña de las cuentas demo y
+ * restauración de las cuentas guardadas en el navegador.
+ *
+ * Se expone como promesa para que nadie lea el repositorio "a medio preparar".
+ * Leerlo antes de que terminara provocaba dos fallos reales: el acceso demo
+ * fallaba (claveHash todavía sin asignar) y, al recargar, la sesión guardada se
+ * daba por perdida porque la cuenta aún no estaba en memoria.
+ */
+export const cuentasListas = (async () => {
   for (const demo of CUENTAS) demo.claveHash = await hashClave(CLAVE_DEMO);
   await hidratar();
 })();

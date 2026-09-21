@@ -14,8 +14,13 @@ const torneos = ref([]);
 const cargando = ref(true);
 
 async function cargar() {
-  torneos.value = await OrganizadorRepository.getTorneos();
-  cargando.value = false;
+  try {
+    torneos.value = await OrganizadorRepository.getTorneos();
+  } catch {
+    notificar('No fue posible cargar tus torneos.');
+  } finally {
+    cargando.value = false;
+  }
 }
 
 onMounted(cargar);

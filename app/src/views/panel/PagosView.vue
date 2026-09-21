@@ -12,7 +12,7 @@ import TablaBase from '@/components/TablaBase.vue';
 const pagos = ref([]);
 const cargando = ref(true);
 
-const columnas = ['Folio', 'Torneo', 'Jugador', 'Monto', 'Proveedor', 'Estado', 'Fecha', 'Acciones'];
+const columnas = ['Folio', 'Torneo', 'Jugador', 'Monto', 'Proveedor', 'Estado', 'Fecha'];
 
 const conteo = computed(() => {
   const mapa = {};
@@ -25,23 +25,6 @@ onMounted(async () => {
   cargando.value = false;
 });
 
-function puedeConfirmar(p) {
-  return p.estado === 'pendiente' || p.estado === 'procesando';
-}
-
-async function simularWebhook(p) {
-  const { PaymentsRepository } = await import('@/core/paymentsRepository.js');
-  const resultado = await PaymentsRepository.simularWebhook(p.id);
-  notificar(resultado.ok ? 'Pago confirmado vía webhook.' : resultado.motivo);
-  if (resultado.ok) pagos.value = await OrganizadorRepository.getPagos();
-}
-
-async function reembolsar(p) {
-  const ok = await OrganizadorRepository.reembolsarPago(p.id);
-  notificar(ok ? 'Pago reembolsado.' : 'Ese pago no admite reembolso.');
-  if (ok) pagos.value = await OrganizadorRepository.getPagos();
-}
-
 async function exportar() {
   await OrganizadorRepository.exportarPagosCsv();
   notificar('CSV de pagos exportado.');
@@ -50,7 +33,7 @@ async function exportar() {
 
 <template>
   <h1 class="titulo-pagina">Pagos</h1>
-  <p class="subtitulo-pagina">Los pagos solo se confirman vía webhook. Aquí solo se consultan.</p>
+  <p class="subtitulo-pagina">Consulta de pagos en línea. La confirmación llega por webhook del proveedor; el panel no la modifica.</p>
 
   <p v-if="cargando" class="texto-suave">Cargando…</p>
 
@@ -72,11 +55,6 @@ async function exportar() {
         <td data-col="Proveedor">{{ p.proveedor }}</td>
         <td data-col="Estado"><EstadoInsignia :estado="p.estado" /></td>
         <td data-col="Fecha">{{ Formatters.fechaLarga(p.fecha) }}</td>
-        <td data-col="Acciones">
-          <button v-if="puedeConfirmar(p)" type="button" class="boton boton-texto" @click="simularWebhook(p)">Simular webhook</button>
-          <button v-else-if="p.estado === 'pagado'" type="button" class="boton boton-texto" @click="reembolsar(p)">Reembolsar</button>
-          <span v-else class="texto-suave">—</span>
-        </td>
       </tr>
     </tabla-base>
   </template>

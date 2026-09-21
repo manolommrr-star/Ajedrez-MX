@@ -27,9 +27,14 @@ const elegibles = computed(() => {
 const hechos = computed(() => participantes.value.filter((p) => p.estado === 'checkin').length);
 
 onMounted(async () => {
-  torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
-  if (torneo.value) participantes.value = await OrganizadorRepository.getParticipantes(props.id);
-  cargando.value = false;
+  try {
+    torneo.value = await OrganizadorRepository.getTorneoPorId(props.id);
+    if (torneo.value) participantes.value = await OrganizadorRepository.getParticipantes(props.id);
+  } catch {
+    notificar('No fue posible cargar el check-in.');
+  } finally {
+    cargando.value = false;
+  }
 });
 
 async function registrar(p) {
