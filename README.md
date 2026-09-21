@@ -21,20 +21,18 @@ a Vite como argumento (haría que busque el proyecto en una carpeta `#`).
 
 ## Rutas (hash)
 
-| Ruta | Contenido |
-|---|---|
-| `#/` | Catálogo con hero, buscador y filtros |
-| `#/torneo/:id` | Detalle con categorías y panel de inscripción |
-| `#/torneo/:id/inscribirse` | Formulario de inscripción |
-| `#/pagar/:folio` | Checkout simulado (webhook demo) |
-| `#/mis-inscripciones` | Inscripciones del jugador + cancelación temprana |
-| `#/registro` · `#/acceder` | Cuentas con rol (jugador/organizador) |
-| `#/panel` | Resumen con estadísticas, "mis torneos" y últimos pagos |
-| `#/panel/torneos` | Torneos del organizador (publicado/borrador) con acciones |
-| `#/panel/crear` | Formulario de creación de torneo |
-| `#/panel/torneo/:id/editar` | Formulario precargado |
-| `#/panel/torneo/:id` | Detalle con pestañas: General, Inscripciones, Participantes, Check-in y Pagos |
-| `#/panel/configuracion` | Ajustes del organizador (maqueta visual: no guarda ajustes ni activa integraciones) |
+| Ruta                            | Contenido                                                                           |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `#/`                          | Catálogo con hero, buscador y filtros                                              |
+| `#/torneo/:id`                | Detalle con categorías y panel de inscripción                                     |
+| `#/torneo/:id/inscribirse`    | Formulario de inscripción                                                          |
+| `#/mis-inscripciones`         | Inscripciones del jugador + cancelación temprana                                   |
+| `#/registro` · `#/acceder` | Cuentas con rol (jugador/organizador)                                               |
+| `#/panel`                     | Resumen con estadísticas, "mis torneos" y últimos pagos                           |
+| `#/panel/torneos`             | Torneos del organizador (publicado/borrador) con acciones                           |
+| `#/panel/crear`               | Formulario de creación de torneo                                                   |
+| `#/panel/torneo/:id/editar`   | Formulario precargado                                                               |
+| `#/panel/torneo/:id`          | Detalle con pestañas: General, Inscripciones, Participantes, Check-in y Pagos      |
 
 El panel exige una cuenta con rol **organizador**: la guardia vive en
 `app/src/router/index.js` y redirige a `#/acceder` (sin sesión) o a
@@ -46,6 +44,7 @@ dentro del detalle del torneo, no rutas independientes.
 ## Qué incluye
 
 ### Marketplace (torneos)
+
 - Página principal con hero, buscador y filtros (ciudad y modalidad).
 - Secciones: torneos destacados, cercanos (próximos 45 días) y próximos.
 - Tarjetas de torneo: nombre, fecha, ciudad/estado, modalidad, sistema,
@@ -54,24 +53,25 @@ dentro del detalle del torneo, no rutas independientes.
   cupo, organizador y botón "Inscribirme" que abre el formulario de inscripción.
 
 ### Panel de organizador
+
 Maqueta navegable con datos ficticios en memoria (no escribe en Supabase):
 
-| Sección | Contenido |
-|---|---|
-| Inicio | Resumen con estadísticas, "mis torneos" y últimos pagos |
-| Torneos | Listado de torneos del organizador (publicado/borrador) con publicar, despublicar, cancelar y duplicar |
-| Crear / Editar | Formulario de torneo con categorías y precios |
-| Detalle del torneo | Pestaña Inscripciones (validar pago → confirmar → check-in), Participantes (FIDE ID/Elo/federación + buscador + **Exportar TXT/XML/CSV Swiss-Manager** y CSV de check-in), Check-in y Pagos (estados: pagado, pendiente, procesando…) |
-| Configuración | Opciones de pagos y QR como maqueta visual |
+| Sección           | Contenido                                                                                                                                                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inicio             | Resumen con estadísticas, "mis torneos" y últimos pagos                                                                                                                                                                                       |
+| Torneos            | Listado de torneos del organizador (publicado/borrador) con publicar, despublicar, cancelar y duplicar                                                                                                                                          |
+| Crear / Editar     | Formulario de torneo con categorías y precios                                                                                                                                                                                                  |
+| Detalle del torneo | Pestaña Inscripciones (validar pago → confirmar → check-in), Participantes (FIDE ID/Elo/federación + buscador +**Exportar TXT/XML/CSV Swiss-Manager** y CSV de check-in), Check-in y Pagos (estados: pagado, pendiente, procesando…) |
+| Configuración     | Opciones de pagos y QR como maqueta visual                                                                                                                                                                                                      |
 
 ### Cuentas y flujo del jugador
 
-| Ruta | Contenido |
-|---|---|
-| `#/registro` | **Crear cuenta con rol**: jugador u organizador (correo + contraseña) |
-| `#/acceder` | Iniciar sesión + accesos rápidos a las cuentas demo |
-| `#/torneo/:id/inscribirse` | Formulario: categoría del torneo + datos del jugador |
-| `#/mis-inscripciones` | Inscripciones del jugador con estado y cancelación temprana |
+| Ruta                         | Contenido                                                                    |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `#/registro`               | **Crear cuenta con rol**: jugador u organizador (correo + contraseña) |
+| `#/acceder`                | Iniciar sesión + accesos rápidos a las cuentas demo                        |
+| `#/torneo/:id/inscribirse` | Formulario: categoría del torneo + datos del jugador                        |
+| `#/mis-inscripciones`      | Inscripciones del jugador con estado y cancelación temprana                 |
 
 - Las cuentas son un mock de `auth.users + profiles`: correo con formato válido,
   contraseña de mínimo 8 caracteres (guardada solo como hash SHA-256) y rol
@@ -86,6 +86,7 @@ Maqueta navegable con datos ficticios en memoria (no escribe en Supabase):
   de estado queda en el historial (mock de `registration_historial`).
 
 El panel es un **dashboard con barra lateral**:
+
 - **Mobile**: sidebar oculto que se abre con botón hamburguesa, con fondo oscurecido.
 - **Desktop (≥900px)**: sidebar fijo a la izquierda.
 - Header superior con botón hamburguesa, título de sección y nombre del organizador.
@@ -184,7 +185,7 @@ Ajedrez-MX/
    Supabase en `app/src/core/` (sin tocar vistas).
 2. Registro online del jugador: el flujo ya existe como demo (perfil, inscripción
    con validación de cupo/duplicados, historial y cancelación temprana); con
-   Supabase se apoya en la RLS "Jugador se inscribe en torneos abiertos".
+   uSupabase se apoya en la RLS "Jugador se inscribe en torneos abiertos".
 3. Pasarela de pagos (Mercado Pago) con confirmación por webhook/edge function
    (nunca por retorno del cliente) y QR por inscripción pagada.
 4. Importación de resultados desde Swiss-Manager (Nivel 2) y reportes SQL.

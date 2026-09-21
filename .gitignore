@@ -1,0 +1,7 @@
+# Evitar subir basura de sesión/control
+*.txt
+*.ps1
+tmp*.js
+node_modules/
+dist/
+build-log*.txt
