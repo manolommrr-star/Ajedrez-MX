@@ -55,6 +55,8 @@ function accionesDe(p) {
 async function aplicar(p, accion) {
   const destino = MAPA[accion];
   if (!destino) return;
+  const etiqueta = accion === 'retirar' ? 'retirar' : 'cancelar';
+  if (!confirm(`¿${etiqueta[0].toUpperCase() + etiqueta.slice(1)} la inscripción de ${p.nombreJugador}?`)) return;
   const ok = await OrganizadorRepository.actualizarEstadoInscripcion(p.id, destino);
   notificar(ok ? 'Inscripción actualizada.' : 'Transición no válida.');
   if (ok) p.estado = destino;

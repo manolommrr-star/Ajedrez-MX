@@ -4,6 +4,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
 import { RegistrationsRepository } from '@/core/registrationsRepository.js';
+import { Formatters } from '@/utils/formatters.js';
 import { notificar } from '@/composables/useAviso.js';
 
 const router = useRouter();
@@ -16,10 +17,12 @@ onMounted(async () => {
   try {
     perfil.value = await OrganizadorRepository.getPerfil();
     torneos.value = await OrganizadorRepository.getTorneos();
-    // getPorTorneo es asíncrono: se resuelven una vez y se guardan en un ref.
-    for (const t of torneos.value) {
-      const regs = await RegistrationsRepository.getPorTorneo(t.id);
-      estadisticas.value[t.id] = {
+    // Se consultan en paralelo (antes era un await por torneo, N×RTT con backend).
+    const pares = await Promise.all(
+      torneos.value.map(async (t) => [t.id, await RegistrationsRepository.getPorTorneo(t.id)])
+    );
+    for (const [id, regs] of pares) {
+      estadisticas.value[id] = {
         confirmados: regs.filter((r) => r.estado === 'confirmada' || r.estado === 'checkin').length,
         pendientes: regs.filter((r) =>
           ['pendiente', 'pago_pendiente', 'pago_en_revision'].includes(r.estado)).length
@@ -32,7 +35,7 @@ onMounted(async () => {
   }
 });
 
-const hoy = computed(() => new Date().toISOString().slice(0, 10));
+const hoy = computed(() => Formatters.hoyLocal());
 const proximos = computed(() =>
   torneos.value.filter((t) => t.fecha >= hoy.value && t.estadoPublicacion === 'publicado'));
 const activos = computed(() =>
@@ -90,30 +93,32 @@ function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id
 
     <section v-if="!proximos.length && !activos.length" class="panel-vacio">
       <p>No tienes torneos publicados.</p>
-      <button class="boton boton-primario" @click="router.push({name:'panel-crear'})">Crear tu primer torneo</button>
+      <button class="boton boton-verde" @click="router.push({name:'panel-crear'})">Crear tu primer torneo</button>
     </section>
   </section>
 </template>
 
 <style scoped>
+/* Tokens del tema (tema.css). Antes se usaban variables inexistentes
+   (--texto-secundario, --border, --fondo-hover…) y se perdían bordes/colores. */
 .panel-inicio-header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
-.panel-inicio-sub { margin: 0 0 1.5rem; color: var(--texto-secundario); }
+.panel-inicio-sub { margin: 0 0 1.5rem; color: var(--texto-suave); }
 .panel-fila-accesos { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
-.acceso { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--fondo); text-decoration: none; color: var(--texto); font-weight: 500; }
-.acceso:hover { background: var(--fondo-hover); border-color: var(--border-acento); }
+.acceso { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); text-decoration: none; color: var(--texto); font-weight: 500; }
+.acceso:hover { background: var(--superficie-3); border-color: var(--verde); }
 .panel-seccion { margin-bottom: 2rem; }
-.panel-seccion h2 { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 0.05em; }
+.panel-seccion h2 { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.05em; }
 .panel-torneos { display: flex; flex-direction: column; gap: 0.5rem; }
-.panel-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--fondo); cursor: pointer; }
-.panel-card:hover { background: var(--fondo-hover); border-color: var(--border-acento); }
-.panel-card--activo { border-left: 4px solid var(--color-exito); }
+.panel-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); cursor: pointer; }
+.panel-card:hover { background: var(--superficie-3); border-color: var(--verde); }
+.panel-card--activo { border-left: 4px solid var(--verde); }
 .panel-card h3 { margin: 0 0 0.25rem; font-size: 1rem; }
-.panel-meta { margin: 0; font-size: 0.8rem; color: var(--texto-secundario); }
-.panel-meta-mas { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--texto-secundario); }
+.panel-meta { margin: 0; font-size: 0.8rem; color: var(--texto-suave); }
+.panel-meta-mas { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--texto-suave); }
 .panel-estadisticas { display: flex; gap: 1rem; font-size: 0.8rem; flex-shrink: 0; }
-.stat { color: var(--texto-secundario); } .stat strong { color: var(--texto); }
-.stat-rojo { color: var(--color-advertencia); }
-.panel-accion { font-size: 0.8rem; color: var(--texto-secundario); flex-shrink: 0; }
-.panel-vacio { text-align: center; padding: 3rem; border: 1px dashed var(--border); border-radius: 8px; }
-.panel-vacio p { margin: 0 0 1rem; color: var(--texto-secundario); }
+.stat { color: var(--texto-suave); } .stat strong { color: var(--texto); }
+.stat-rojo { color: var(--peligro); }
+.panel-accion { font-size: 0.8rem; color: var(--texto-suave); flex-shrink: 0; }
+.panel-vacio { text-align: center; padding: 3rem; border: 1px dashed var(--borde-fuerte); border-radius: var(--radio); }
+.panel-vacio p { margin: 0 0 1rem; color: var(--texto-suave); }
 </style>

@@ -1,6 +1,24 @@
 -- ============================================================
 -- AjedrezMX — Esquema canónico (Etapa 2 · Objetivo Supabase)
 --
+-- NOTAS DE SEGURIDAD (Fase 2, aplicadas en este archivo):
+--   1) profiles.rol queda fuera del alcance del cliente: el rol lo asigna
+--      el servidor al crear la cuenta (función/trigger con service_role).
+--      La política "Perfil propio" es for all USING (auth.uid() = id):
+--      complementarla en producción con revoke de update sobre `rol`
+--      o con un trigger que impida cambiarlo (ver docs/01).
+--   2) payments: el organizador SOLO LEE ("Organizador lee pagos");
+--      la escritura es exclusiva de edge functions con service_role.
+--   3) es_organizador_de_torneo() con `set search_path = public, pg_temp`
+--      (endurecimiento de la función security definer).
+--   4) El organizador NO lee `players` directamente: usa la vista acotada
+--      vw_participantes_organizador (solo columnas de exportación, sin
+--      email/teléfono del jugador), definida al final de este archivo.
+-- ============================================================
+
+-- ============================================================
+-- AjedrezMX — Esquema canónico (Etapa 2 · Objetivo Supabase)
+--
 -- Base relacional:
 --   eventos → torneos → categorías
 --   jugadores → inscripciones → pagos → check-ins
@@ -205,7 +223,9 @@ alter table public.registration_historial enable row level security;
 -- Auxiliar: ¿el usuario autenticado organiza este torneo?
 create or replace function public.es_organizador_de_torneo(torneo_id uuid)
 returns boolean
-language sql stable security definer as $$
+language sql stable security definer
+set search_path = public, pg_temp
+as $$
   select exists (
     select 1 from public.tournaments t
     where t.id = torneo_id and t.organizador_id = auth.uid()
@@ -254,7 +274,10 @@ create policy "Organizador edita categorías de sus torneos"
     )
   );
 
--- Jugadores: cada quien su propio registro
+-- Jugadores: cada quien su propio registro.
+-- NOTA: el organizador NO puede leer `players` directamente (datos personales
+-- completos: email, teléfono). Para participantes/exportación usa la vista
+-- vw_participantes_organizador (solo columnas necesarias, ver final).
 create policy "Jugador solo su propio registro"
   on public.players for all
   using (user_id = auth.uid());
@@ -283,7 +306,8 @@ create policy "Jugador se inscribe en torneos abiertos"
       where t.id = torneo_id
         and t.estado_publicacion = 'publicado'
         and (select count(*) from public.registrations r
-             where r.torneo_id = torneo_id) < t.cupo
+             where r.torneo_id = torneo_id
+               and r.estado not in ('cancelada', 'rechazada', 'retirada')) < t.cupo
     )
   );
 
@@ -294,9 +318,11 @@ create policy "Organizador actualiza inscripciones"
   on public.registrations for update
   using (public.es_organizador_de_torneo(torneo_id));
 
--- Pagos: solo el organizador (lectura/gestión). Sin insert para clientes.
-create policy "Organizador gestiona pagos"
-  on public.payments for all
+-- Pagos: el organizador SOLO LEE. La escritura (insert/update) la hacen
+-- únicamente edge functions con service_role (webhook del proveedor), nunca
+-- el cliente: por eso NO existe política de escritura para clientes.
+create policy "Organizador lee pagos"
+  on public.payments for select
   using (public.es_organizador_de_torneo(torneo_id));
 
 -- Check-ins: solo el organizador
@@ -320,3 +346,42 @@ create policy "Organizador lee historial"
       where r.id = registration_id and t.organizador_id = auth.uid()
     )
   );
+
+-- ============================================================
+-- Vista para participantes (panel + exportación a Swiss Manager)
+--
+-- El organizador NO puede leer `players` directamente (RLS: solo el propio
+-- jugador), pero necesita los datos ajedrecísticos de SUS inscritos para el
+-- panel y la exportación. Esta vista expone ÚNICAMENTE las columnas de
+-- exportación (sin email ni teléfono del jugador) y solo filas de torneos
+-- que organiza la persona autenticada. Como la vista la crea el propietario
+-- del esquema, no está limitada por la RLS de `players` (comportamiento por
+-- defecto de Postgres), lo que la convierte en el único canal de lectura.
+-- ============================================================
+create or replace view public.vw_participantes_organizador as
+select
+  r.id              as registration_id,
+  r.torneo_id,
+  r.categoria_id,
+  r.categoria_nombre,
+  r.precio,
+  r.estado,
+  r.fecha_creacion,
+  p.id              as player_id,
+  p.nombre,
+  p.apellidos,
+  p.fecha_nacimiento,
+  p.fide_id,
+  p.federacion,
+  p.club,
+  p.elo,
+  p.titulo
+from public.registrations r
+join public.players p on p.id = r.player_id
+where exists (
+  select 1 from public.tournaments t
+  where t.id = r.torneo_id and t.organizador_id = auth.uid()
+);
+
+grant select on public.vw_participantes_organizador to authenticated;
+revoke all on public.vw_participantes_organizador from anon;

@@ -15,8 +15,10 @@ const DIAS = [
 
 /** Convierte 'YYYY-MM-DD' a Date (a medianoche UTC, sin zona horaria). */
 function aFecha(iso) {
+  if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
   const [anio, mes, dia] = iso.split('-').map(Number);
-  return new Date(Date.UTC(anio, mes - 1, dia));
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
 export const Formatters = {
@@ -25,23 +27,40 @@ export const Formatters = {
     return `$ ${new Intl.NumberFormat('es-MX').format(monto)} MXN`;
   },
 
-  /** '2026-09-28' → '28 septiembre 2026' */
+  /** '2026-09-28' → '28 septiembre 2026' ('' si la fecha es inválida). */
   fechaLarga(iso) {
     const f = aFecha(iso);
+    if (!f) return '';
     return `${f.getUTCDate()} ${MESES[f.getUTCMonth()]} ${f.getUTCFullYear()}`;
   },
 
-  /** '2026-09-28' → 'domingo 28 de septiembre de 2026' */
+  /** '2026-09-28' → 'domingo 28 de septiembre de 2026' ('' si es inválida). */
   fechaCompleta(iso) {
     const f = aFecha(iso);
+    if (!f) return '';
     return `${DIAS[f.getUTCDay()]} ${f.getUTCDate()} de ${MESES[f.getUTCMonth()]} de ${f.getUTCFullYear()}`;
   },
 
-  /** Días que faltan hasta la fecha (negativo si ya pasó). */
+  /**
+   * Fecha de hoy en hora local del navegador ('YYYY-MM-DD').
+   * Se usa para comparar con las fechas de torneo (que son locales);
+   * usar UTC aquí movía de día los torneos de hoy (México UTC-6/-5).
+   */
+  hoyLocal() {
+    const ahora = new Date();
+    const anio = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    return `${anio}-${mes}-${dia}`;
+  },
+
+  /** Días que faltan hasta la fecha (negativo si ya pasó, null si es inválida). */
   diasHasta(iso) {
+    const f = aFecha(iso);
+    if (!f) return null;
     const hoy = new Date();
     const hoyUtc = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-    return Math.round((aFecha(iso) - hoyUtc) / 86_400_000);
+    return Math.round((f - hoyUtc) / 86_400_000);
   },
 
   /** Devuelve el singular o el plural según el número. */

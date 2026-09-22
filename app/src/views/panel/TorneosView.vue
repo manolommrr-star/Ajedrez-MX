@@ -72,7 +72,8 @@ async function duplicar(t) {
     <article v-for="t in torneos" :key="t.id" class="fila-dato">
       <div>
         <p class="fila-dato-nombre">
-          <RouterLink :to="`/torneo/${encodeURIComponent(t.id)}`">{{ t.nombre }}</RouterLink>
+          <span v-if="t.estadoPublicacion !== 'publicado'">{{ t.nombre }}</span>
+          <RouterLink v-else :to="`/torneo/${encodeURIComponent(t.id)}`">{{ t.nombre }}</RouterLink>
         </p>
         <p class="fila-dato-meta">{{ Formatters.fechaLarga(t.fecha) }} · {{ t.ciudad }}, {{ t.estado }}</p>
       </div>

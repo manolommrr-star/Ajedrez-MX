@@ -21,13 +21,22 @@ const conteo = computed(() => {
 });
 
 onMounted(async () => {
-  pagos.value = await OrganizadorRepository.getPagos();
-  cargando.value = false;
+  try {
+    pagos.value = await OrganizadorRepository.getPagos();
+  } catch {
+    notificar('No fue posible cargar los pagos.');
+  } finally {
+    cargando.value = false;
+  }
 });
 
 async function exportar() {
-  await OrganizadorRepository.exportarPagosCsv();
-  notificar('CSV de pagos exportado.');
+  try {
+    await OrganizadorRepository.exportarPagosCsv();
+    notificar('CSV de pagos exportado.');
+  } catch {
+    notificar('No fue posible generar el CSV.');
+  }
 }
 </script>
 

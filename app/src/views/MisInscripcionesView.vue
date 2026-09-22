@@ -52,6 +52,7 @@ function cancelable(r) {
 }
 
 async function cancelar(r) {
+  if (!confirm(`¿Cancelar tu inscripción a ${r.torneo?.nombre || r.torneoId}?`)) return;
   const ok = await RegistrationsRepository.cancelarDeJugador(r.id, estado.jugador.id);
   notificar(ok ? 'Inscripción cancelada.' : 'No fue posible cancelar la inscripción.');
   if (ok) r.estado = 'cancelada';

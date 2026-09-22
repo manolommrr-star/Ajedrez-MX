@@ -24,7 +24,7 @@ const cargando = ref(true);
 const categoria = ref('');
 const enviando = ref(false);
 
-const perfil = ref({ nombre: '', apellidos: '', email: '', telefono: '', fideId: '', elo: '', club: '', federacion: '', ciudad: '', estado: '' });
+const perfil = ref({ nombre: '', apellidos: '', email: '', telefono: '', fideId: '', elo: '', club: '', federacion: '', ciudad: '', estado: '', sexo: '' });
 
 const completo = computed(() => torneo.value && torneo.value.inscritos >= torneo.value.cupo);
 const precioSeleccionado = computed(() => {
@@ -79,7 +79,8 @@ async function inscribirse() {
         federacion: perfil.value.federacion,
         ciudad: perfil.value.ciudad,
         estado: perfil.value.estado,
-        telefono: perfil.value.telefono
+        telefono: perfil.value.telefono,
+        sexo: perfil.value.sexo
       }
     });
     if (!alta.ok) {
@@ -203,7 +204,7 @@ async function inscribirse() {
               </label>
               <label class="campo">
                 <span class="campo-etiqueta">Elo</span>
-                <input v-model="perfil.elo" class="control" type="number" min="0">
+                <input v-model="perfil.elo" class="control" type="number" min="0" max="3000">
               </label>
             </div>
             <div class="campo-fila">
@@ -212,8 +213,12 @@ async function inscribirse() {
                 <input v-model="perfil.club" class="control">
               </label>
               <label class="campo">
-                <span class="campo-etiqueta">Ciudad</span>
-                <input v-model="perfil.ciudad" class="control">
+                <span class="campo-etiqueta">Sexo</span>
+                <select v-model="perfil.sexo" class="control">
+                  <option value="">Sin especificar</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                </select>
               </label>
             </div>
             <p class="campo-ayuda">Al enviar se crea tu perfil de jugador (demo) y se inicia tu sesión.</p>
