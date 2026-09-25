@@ -9,6 +9,7 @@
 import { PlayersRepository } from './playersRepository.js';
 import { generarId } from '../utils/ids.js';
 import { esCorreo, claveAceptable } from '../utils/validacionesCuenta.js';
+import { cobroValido } from '../utils/validacionesFiscales.js';
 import { ORGANIZADOR_DEMO } from '../data/mockRelacional.js';
 
 const CLAVE_ALMACEN = 'ajedrezmx-cuentas-demo';
@@ -93,12 +94,18 @@ async function hidratar() {
   for (const cuenta of guardadas) {
     if (CUENTAS.some((c) => c.id === cuenta.id)) continue;
     if (cuenta.rol === 'player') {
-      // El jugador mock vive solo en memoria: se recrea desde la cuenta.
-      const jugador = await PlayersRepository.crearJugador(cuenta.datosJugador || {});
+      // El jugador mock vive solo en memoria: se recrea desde la cuenta
+      // conservando su id, para que sus inscripciones no queden huérfanas.
+      const jugador = await PlayersRepository.crearJugador({
+        id: cuenta.playerId,
+        ...(cuenta.datosJugador || {})
+      });
       cuenta.playerId = jugador.id;
     }
     CUENTAS.push(cuenta);
   }
+  // Cualquier normalización (p. ej. un playerId asignado ahora) queda guardada.
+  if (guardadas.length) guardar();
 }
 
 /** Lee un mapa simple ({ llave: valor }) de localStorage con tolerancia a fallos. */
@@ -276,6 +283,49 @@ export const CuentasRepository = {
     cuenta.ultimoAcceso = new Date().toISOString();
     guardar();
     return { ok: true, cuenta };
+  },
+
+  /**
+   * Actualiza los datos de cobro del organizador (Mercado Pago y fiscales).
+   * Contraparte de actualizar() para los campos que solo usa "Cobros y cuenta";
+   * valida con las mismas reglas del registro (validacionesFiscales).
+   */
+  async actualizarCobro(id, cambios = {}) {
+    await cuentasListas;
+    const cuenta = CUENTAS.find((c) => c.id === id);
+    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
+    if (cuenta.rol !== 'organizer') {
+      return { ok: false, motivo: 'Solo las cuentas de organizador tienen datos de cobro.' };
+    }
+    const datos = { ...(cuenta.datosOrganizador || {}), ...soloDefinidos(cambios) };
+    const motivo = cobroValido({ ...datos, email: datos.mpEmail || cuenta.email });
+    if (motivo) return { ok: false, motivo };
+    datos.rfc = String(datos.rfc).trim().toUpperCase();
+    cuenta.datosOrganizador = datos;
+    guardar();
+    return { ok: true, datos };
+  },
+
+  /**
+   * Marca la cuenta de Mercado Pago como conectada.
+   * Demo: simula el OAuth Authorization Code; en producción el token lo
+   * devuelve el backend y se guarda la conexión, no la tarjeta.
+   */
+  async conectarMercadoPago(id) {
+    await cuentasListas;
+    const cuenta = CUENTAS.find((c) => c.id === id);
+    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
+    if (cuenta.rol !== 'organizer') {
+      return { ok: false, motivo: 'Solo las cuentas de organizador tienen datos de cobro.' };
+    }
+    const mpEmail = String(cuenta.datosOrganizador?.mpEmail || cuenta.email).trim();
+    if (!esCorreo(mpEmail)) {
+      return { ok: false, motivo: 'Escribe un correo válido para tu cuenta de Mercado Pago.' };
+    }
+    const datos = { ...cuenta.datosOrganizador, mpEmail, mpEstado: 'conectado' };
+    cuenta.datosOrganizador = datos;
+    guardar();
+    return { ok: true, datos };
   },
 
   /**

@@ -43,9 +43,7 @@ onMounted(async () => {
   }
 });
 
-const nombreJugador = computed(() =>
-  estado.jugador ? `${estado.jugador.apellidos} ${estado.jugador.nombre}` : ''
-);
+const nombreJugador = computed(() => Formatters.nombre(estado.jugador));
 
 function cancelable(r) {
   return r.estado === 'pendiente' || r.estado === 'pago_pendiente';

@@ -29,14 +29,20 @@ export const PlayersRepository = {
    * Crea el registro del jugador (Etapa 3 · inscripción online).
    * En Supabase será un insert en players, ligado a user_id cuando exista
    * cuenta de auth; aquí solo datos locales con la misma forma.
+   *
+   * Si `datos.id` viene informado se respeta (rehidratación tras recargar):
+   * el perfil conserva su identidad y sus inscripciones no quedan huérfanas.
    */
   async crearJugador(datos) {
+    const id = datos.id ? String(datos.id) : generarId('j');
+    const existente = JUGADORES_DEMO.find((p) => p.id === id);
+    if (existente) return existente;
     const limpiar = (v) => {
       const texto = String(v ?? '').trim();
       return texto === '' ? null : texto;
     };
     const nuevo = {
-      id: generarId('j'),
+      id,
       nombre: limpiar(datos.nombre),
       apellidos: limpiar(datos.apellidos),
       fechaNacimiento: limpiar(datos.fechaNacimiento),

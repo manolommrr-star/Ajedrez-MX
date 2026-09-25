@@ -43,6 +43,12 @@ export function transicionValida(desde, hacia) {
   return permitidas.includes(hacia);
 }
 
+/** Nombre legible del jugador (tolerante a datos vacíos o anonimizados). */
+function nombreCompleto(jugador) {
+  if (!jugador) return '—';
+  return [jugador.apellidos, jugador.nombre].filter(Boolean).join(' ') || '—';
+}
+
 export const RegistrationsRepository = {
   async getPorTorneo(torneoId) {
     return INSCRIPCIONES_DEMO
@@ -65,7 +71,7 @@ export const RegistrationsRepository = {
       return {
         ...r,
         jugador: jugador || { nombre: '¿?' },
-        nombreJugador: jugador ? `${jugador.apellidos} ${jugador.nombre}` : '—'
+        nombreJugador: nombreCompleto(jugador)
       };
     });
   },

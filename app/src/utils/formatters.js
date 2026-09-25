@@ -80,6 +80,16 @@ export const Formatters = {
     });
   },
 
+  /**
+   * Nombre legible del jugador: "Torres Ana" (o "Ana").
+   * Tolera campos vacíos: un perfil anonimizado se muestra como "Eliminado",
+   * no como "null Eliminado".
+   */
+  nombre(persona) {
+    if (!persona) return '';
+    return [persona.apellidos, persona.nombre].filter(Boolean).join(' ');
+  },
+
   /** Devuelve el singular o el plural según el número. */
   plural(n, singular, plural) {
     return `${n} ${n === 1 ? singular : plural}`;

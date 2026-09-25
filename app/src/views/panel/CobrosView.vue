@@ -2,52 +2,78 @@
 /**
  * Cobros y cuenta (panel del organizador).
  *
- * Muestra los datos de cobro de Mercado Pago que se capturan en el registro
- * en 3 pasos: estado de conexión, correo de la cuenta MP, CLABE (enmascarada
- * por defecto) y datos fiscales (RFC, razón social, régimen, CP).
- * La organización se edita en "Mi cuenta" (sin duplicarla aquí).
+ * ÚNICA vista que edita los datos de cobro de Mercado Pago y los fiscales
+ * (la organización se edita en "Mi cuenta"). Valida con las mismas reglas
+ * que el registro (utils/validacionesFiscales): no hay dos criterios.
  * En producción la verificación de identidad vive en Mercado Pago.
  */
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
-import { regimenTexto } from '@/data/catalogoFiscal.js';
+import { CuentasRepository } from '@/core/cuentasRepository.js';
+import { REGIMENES } from '@/data/catalogoFiscal.js';
+import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
+
+const { estado, refrescarSesion } = useSesion();
 
 const perfil = ref(null);
 const cargando = ref(true);
+const guardando = ref(false);
 const clabeVisible = ref(false);
+
+/** Datos editables de cobro (una sola copia en pantalla: nada en modo lectura). */
+const cobro = reactive({
+  mpEmail: '', tipoPersona: 'fisica', rfc: '', razonSocial: '',
+  regimen: '601', cpFiscal: '', clabe: ''
+});
+
+const conectado = computed(() => perfil.value?.mpEstado === 'conectado');
+
+/** Vuelca el perfil del organizador en el formulario. */
+function cargar() {
+  const p = perfil.value || {};
+  cobro.mpEmail = p.mpEmail || p.email || '';
+  cobro.tipoPersona = p.tipoPersona || 'fisica';
+  cobro.rfc = p.rfc || '';
+  cobro.razonSocial = p.razonSocial || '';
+  cobro.regimen = p.regimen || '601';
+  cobro.cpFiscal = p.cpFiscal || '';
+  cobro.clabe = p.clabe || '';
+}
+
+async function recargar() {
+  perfil.value = await OrganizadorRepository.getPerfil();
+  cargar();
+}
 
 onMounted(async () => {
   try {
-    perfil.value = await OrganizadorRepository.getPerfil();
+    await recargar();
   } finally {
     cargando.value = false;
   }
 });
 
-const conectado = computed(() => perfil.value?.mpEstado === 'conectado');
-const mpEmail = computed(() => perfil.value?.mpEmail || perfil.value?.email || '');
-const regimen = computed(() => (perfil.value?.regimen ? regimenTexto(perfil.value.regimen) : ''));
-const tipoPersona = computed(() =>
-  perfil.value?.tipoPersona === 'moral' ? 'Persona moral' : 'Persona física');
-
-/** CLABE visible u oculta: '0121••••••••6782' por defecto. */
-const clabe = computed(() => {
-  const v = String(perfil.value?.clabe || '').trim();
-  if (!v) return '';
-  return clabeVisible.value ? v : `${v.slice(0, 4)}••••••••${v.slice(-4)}`;
-});
-
-function alternarClabe() {
-  clabeVisible.value = !clabeVisible.value;
+/** Guarda los datos de cobro (validación fiscal compartida con el registro). */
+async function guardarCobro() {
+  guardando.value = true;
+  const r = await CuentasRepository.actualizarCobro(estado.cuenta?.id, { ...cobro });
+  guardando.value = false;
+  if (!r.ok) { notificar(r.motivo); return; }
+  await refrescarSesion();
+  await recargar();
+  notificar('Datos de cobro guardados.');
 }
 
-function copiarClabe() {
-  const v = String(perfil.value?.clabe || '').trim();
-  if (!v) return;
-  navigator.clipboard?.writeText(v)
-    .then(() => notificar('CLABE copiada al portapapeles.'))
-    .catch(() => notificar('No fue posible copiar la CLABE.'));
+/** Conecta (o reconecta) la cuenta de Mercado Pago (demo del OAuth). */
+async function conectar() {
+  guardando.value = true;
+  const r = await CuentasRepository.conectarMercadoPago(estado.cuenta?.id);
+  guardando.value = false;
+  if (!r.ok) { notificar(r.motivo); return; }
+  await refrescarSesion();
+  await recargar();
+  notificar('Cuenta de Mercado Pago conectada.');
 }
 </script>
 
@@ -73,61 +99,97 @@ function copiarClabe() {
         </div>
       </div>
 
-      <section class="panel-seccion">
-        <h2>Cuenta de cobro</h2>
-        <div class="ficha">
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Correo de Mercado Pago</span>
-            <span class="ficha-valor mono">{{ mpEmail }}</span>
+      <form class="formulario" @submit.prevent="guardarCobro">
+        <section class="panel-seccion">
+          <h2>Cuenta de cobro</h2>
+          <div class="ficha">
+            <div class="ficha-fila">
+              <span class="ficha-etiqueta">Estado</span>
+              <span class="ficha-valor">
+                <span class="etiqueta-estado" :class="conectado ? 'ok' : 'pend'">
+                  {{ conectado ? 'Conectado' : 'Pendiente' }}
+                </span>
+                <button
+                  v-if="!conectado"
+                  type="button"
+                  class="enlace-accion"
+                  :disabled="guardando"
+                  @click="conectar"
+                >Conectar cuenta</button>
+              </span>
+            </div>
+            <div class="ficha-campo">
+              <span class="ficha-etiqueta">Correo de Mercado Pago *</span>
+              <input v-model="cobro.mpEmail" class="control" type="email" required>
+            </div>
           </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">CLABE interbancaria</span>
-            <span class="ficha-valor">
-              <span class="mono">{{ clabe || '—' }}</span>
-              <button type="button" class="enlace-accion" @click="alternarClabe">
+        </section>
+
+        <section class="panel-seccion">
+          <h2>Datos fiscales</h2>
+          <div class="ficha">
+            <div class="ficha-campo">
+              <span class="ficha-etiqueta">Tipo de persona *</span>
+              <select v-model="cobro.tipoPersona" class="control">
+                <option value="fisica">Persona física · RFC de 13 caracteres</option>
+                <option value="moral">Persona moral · RFC de 12 caracteres</option>
+              </select>
+            </div>
+            <div class="ficha-campo">
+              <span class="ficha-etiqueta">RFC *</span>
+              <input
+                v-model="cobro.rfc"
+                class="control"
+                maxlength="13"
+                :placeholder="cobro.tipoPersona === 'moral' ? 'ABC123456789' : 'XXXX000101001'"
+                @input="cobro.rfc = cobro.rfc.toUpperCase()"
+              >
+            </div>
+            <div v-if="cobro.tipoPersona === 'moral'" class="ficha-campo">
+              <span class="ficha-etiqueta">Razón social *</span>
+              <input v-model="cobro.razonSocial" class="control">
+            </div>
+            <div class="ficha-campo">
+              <span class="ficha-etiqueta">Régimen fiscal *</span>
+              <select v-model="cobro.regimen" class="control">
+                <option v-for="r in REGIMENES" :key="r.codigo" :value="r.codigo">{{ r.texto }}</option>
+              </select>
+            </div>
+            <div class="ficha-campo">
+              <span class="ficha-etiqueta">Código postal fiscal * (5 dígitos)</span>
+              <input
+                :value="cobro.cpFiscal"
+                class="control"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="91000"
+                @input="cobro.cpFiscal = cobro.cpFiscal.replace(/\D/g, '')"
+              >
+            </div>
+            <div class="ficha-campo">
+              <span class="ficha-etiqueta">CLABE interbancaria * (18 dígitos)</span>
+              <input
+                :value="cobro.clabe"
+                :type="clabeVisible ? 'text' : 'password'"
+                class="control mono"
+                inputmode="numeric"
+                maxlength="18"
+                placeholder="012345678901234567"
+                @input="cobro.clabe = cobro.clabe.replace(/\D/g, '')"
+              >
+              <button type="button" class="enlace-accion" @click="clabeVisible = !clabeVisible">
                 {{ clabeVisible ? 'Ocultar' : 'Mostrar' }}
               </button>
-              <button v-if="perfil.clabe" type="button" class="enlace-accion" @click="copiarClabe">
-                Copiar
-              </button>
-            </span>
+            </div>
           </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Estado</span>
-            <span class="ficha-valor">
-              <span class="etiqueta-estado" :class="conectado ? 'ok' : 'pend'">
-                {{ conectado ? 'Conectado' : 'Pendiente' }}
-              </span>
-            </span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="panel-seccion">
-        <h2>Datos fiscales</h2>
-        <div class="ficha">
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Tipo de persona</span>
-            <span class="ficha-valor">{{ tipoPersona }}</span>
-          </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">RFC</span>
-            <span class="ficha-valor mono">{{ perfil.rfc || '—' }}</span>
-          </div>
-          <div class="ficha-fila" v-if="perfil.tipoPersona === 'moral'">
-            <span class="ficha-etiqueta">Razón social</span>
-            <span class="ficha-valor">{{ perfil.razonSocial || '—' }}</span>
-          </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Régimen fiscal</span>
-            <span class="ficha-valor">{{ regimen || '—' }}</span>
-          </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">CP fiscal</span>
-            <span class="ficha-valor mono">{{ perfil.cpFiscal || '—' }}</span>
-          </div>
+        <div class="acciones-form">
+          <button type="submit" class="boton boton-verde" :disabled="guardando">
+            {{ guardando ? 'Guardando…' : 'Guardar datos de cobro' }}
+          </button>
         </div>
-      </section>
+      </form>
 
       <p class="nota-mp">
         La verificación de identidad (INE y comprobante de domicilio) se
@@ -176,6 +238,16 @@ function copiarClabe() {
 .ficha-etiqueta { color: var(--texto-suave); flex-shrink: 0; }
 .ficha-valor { text-align: right; word-break: break-word; }
 .mono { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; }
+
+/* Campo editable dentro de una ficha: etiqueta encima, control debajo. */
+.ficha-campo {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--borde);
+}
+.ficha-campo:last-child { border-bottom: 0; }
+.ficha-campo .enlace-accion { margin-left: 0; justify-self: start; }
 
 .enlace-accion {
   margin-left: 0.5rem; padding: 0; border: 0; background: none;

@@ -10,6 +10,7 @@ import { RegistrationsRepository } from '@/core/registrationsRepository.js';
 import { CuentasRepository } from '@/core/cuentasRepository.js';
 import { PaymentsRepository } from '@/core/paymentsRepository.js';
 import { Formatters } from '@/utils/formatters.js';
+import { claveAceptable } from '@/utils/validacionesCuenta.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 import EstadoInsignia from '@/components/EstadoInsignia.vue';
@@ -24,7 +25,7 @@ const cargando = ref(true);
 const categoria = ref('');
 const enviando = ref(false);
 
-const perfil = ref({ nombre: '', apellidos: '', email: '', telefono: '', fideId: '', elo: '', club: '', federacion: '', ciudad: '', estado: '', sexo: '' });
+const perfil = ref({ nombre: '', apellidos: '', email: '', telefono: '', fideId: '', elo: '', club: '', federacion: '', ciudad: '', estado: '', sexo: '', clave: '', confirmar: '' });
 
 const completo = computed(() => torneo.value && torneo.value.inscritos >= torneo.value.cupo);
 const precioSeleccionado = computed(() => {
@@ -65,13 +66,26 @@ async function inscribirse() {
       notificar('Nombre y email son obligatorios.');
       return;
     }
+    // Alta de cuenta desde la inscripción: la contraseña la elige el jugador
+    // (antes se creaba con una clave fija y pública para todas las cuentas).
+    if (perfil.value.clave !== perfil.value.confirmar) {
+      enviando.value = false;
+      notificar('Las contraseñas no coinciden.');
+      return;
+    }
+    const motivoClave = claveAceptable(perfil.value.clave);
+    if (motivoClave) {
+      enviando.value = false;
+      notificar(motivoClave);
+      return;
+    }
     // Crea la cuenta de jugador (mock auth.users + fila players) e inicia sesión.
     const alta = await CuentasRepository.registrar({
       rol: 'player',
       nombre: perfil.value.nombre,
       apellidos: perfil.value.apellidos,
       email: perfil.value.email,
-      clave: 'demo1234',
+      clave: perfil.value.clave,
       extras: {
         fideId: perfil.value.fideId,
         elo: perfil.value.elo,
@@ -169,7 +183,7 @@ async function inscribirse() {
             <p class="grupo-titulo">Tus datos</p>
             <div class="aviso">
               <p>
-                Inscrito como <strong>{{ estado.jugador.apellidos }} {{ estado.jugador.nombre }}</strong>
+                Inscrito como <strong>{{ Formatters.nombre(estado.jugador) }}</strong>
                 <template v-if="estado.jugador.elo"> · Elo {{ estado.jugador.elo }}</template>.
               </p>
             </div>
@@ -221,7 +235,20 @@ async function inscribirse() {
                 </select>
               </label>
             </div>
-            <p class="campo-ayuda">Al enviar se crea tu perfil de jugador (demo) y se inicia tu sesión.</p>
+            <div class="campo-fila">
+              <label class="campo">
+                <span class="campo-etiqueta">Contraseña * (mínimo 8)</span>
+                <input v-model="perfil.clave" class="control" type="password" minlength="8" required>
+              </label>
+              <label class="campo">
+                <span class="campo-etiqueta">Confirmar contraseña *</span>
+                <input v-model="perfil.confirmar" class="control" type="password" minlength="8" required>
+              </label>
+            </div>
+            <p class="campo-ayuda">
+              Al enviar se crea tu cuenta de jugador y se inicia tu sesión con esa contraseña.
+              ¿Ya tienes cuenta? <RouterLink to="/acceder">Accede</RouterLink>.
+            </p>
           </div>
 
           <div class="acciones-form">
