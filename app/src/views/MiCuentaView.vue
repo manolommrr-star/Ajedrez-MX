@@ -8,19 +8,23 @@
  * muestra cobro y datos fiscales).
  */
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { CuentasRepository } from '@/core/cuentasRepository.js';
+import { DatosCuenta } from '@/core/datosCuenta.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 import { esCorreo, claveAceptable } from '@/utils/validacionesCuenta.js';
 import { GIROS, ESTADOS_MX } from '@/data/catalogosCuenta.js';
 import { Formatters } from '@/utils/formatters.js';
 
-const { estado, asegurarSesion, refrescarSesion } = useSesion();
+const router = useRouter();
+const { estado, asegurarSesion, refrescarSesion, cerrarSesion } = useSesion();
 
 const esOrganizador = computed(() => estado.cuenta?.rol === 'organizer');
 const rolTexto = computed(() => (esOrganizador.value ? 'Organizador' : 'Jugador'));
 const correoVerificado = computed(() => Boolean(estado.cuenta?.correoVerificado));
 const ultimoAcceso = computed(() => Formatters.fechaHora(estado.cuenta?.ultimoAcceso));
+const fechaAceptacion = computed(() => Formatters.fechaHora(estado.cuenta?.fechaAceptacion));
 
 const cuentaF = reactive({ nombre: '', apellidos: '', email: '' });
 const jugadorF = reactive({
@@ -31,6 +35,7 @@ const orgF = reactive({
   organizacion: '', giro: GIROS[0], telefono: '', ciudad: '', estado: '', web: ''
 });
 const claveF = reactive({ actual: '', nueva: '', confirmar: '' });
+const borrarF = reactive({ clave: '' });
 
 const guardando = ref('');
 
@@ -145,6 +150,39 @@ async function guardarClave() {
   claveF.nueva = '';
   claveF.confirmar = '';
   notificar('Contraseña actualizada.');
+}
+
+/** Descarga una copia de todos los datos de la cuenta (derecho de acceso). */
+async function descargarDatos() {
+  guardando.value = 'exportar';
+  const datos = await DatosCuenta.reunir(estado.cuenta.id);
+  guardando.value = '';
+  if (!datos) { notificar('No fue posible reunir tus datos.'); return; }
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' })
+  );
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = DatosCuenta.nombreArchivo();
+  enlace.click();
+  URL.revokeObjectURL(url);
+  notificar('Datos descargados.');
+}
+
+/** Elimina la cuenta (confirma con la contraseña) y cierra la sesión. */
+async function eliminarCuenta() {
+  if (!confirm('¿Eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
+  guardando.value = 'eliminar';
+  const r = await CuentasRepository.eliminarCuenta({
+    id: estado.cuenta.id,
+    clave: borrarF.clave
+  });
+  guardando.value = '';
+  if (!r.ok) { notificar(r.motivo); return; }
+  borrarF.clave = '';
+  await cerrarSesion();
+  notificar('Tu cuenta fue eliminada.');
+  router.push('/');
 }
 </script>
 
@@ -361,6 +399,54 @@ async function guardarClave() {
           </button>
         </div>
       </form>
+
+      <!-- Tus datos (descarga) -->
+      <section class="formulario ficha-perfil">
+        <div class="grupo-campos">
+          <p class="grupo-titulo">Tus datos</p>
+          <p class="campo-ayuda">
+            Descarga una copia de tu cuenta, tu perfil y tus inscripciones.
+            No incluye contraseñas ni tokens de acceso.
+          </p>
+          <p v-if="esOrganizador" class="campo-ayuda">
+            Términos y aviso de privacidad aceptados el {{ fechaAceptacion || 'sin registro' }}.
+          </p>
+        </div>
+        <div class="acciones-form">
+          <button
+            type="button"
+            class="boton boton-gris"
+            :disabled="guardando === 'exportar'"
+            @click="descargarDatos"
+          >{{ guardando === 'exportar' ? 'Preparando…' : 'Descargar mis datos (JSON)' }}</button>
+        </div>
+      </section>
+
+      <!-- Eliminar cuenta -->
+      <section class="formulario ficha-perfil">
+        <div class="grupo-campos">
+          <p class="grupo-titulo">Eliminar cuenta</p>
+          <div class="aviso aviso-peligro">
+            <p>
+              Se borrarán tu cuenta y tus datos personales. Las inscripciones y
+              pagos ya realizados se conservan sin tu nombre como registro de
+              cobro; los torneos que hayas publicado no se borran.
+            </p>
+          </div>
+          <label class="campo">
+            <span class="campo-etiqueta">Confirma con tu contraseña *</span>
+            <input v-model="borrarF.clave" class="control" type="password" autocomplete="off">
+          </label>
+        </div>
+        <div class="acciones-form">
+          <button
+            type="button"
+            class="boton boton-borde boton-peligro"
+            :disabled="guardando === 'eliminar'"
+            @click="eliminarCuenta"
+          >{{ guardando === 'eliminar' ? 'Eliminando…' : 'Eliminar mi cuenta' }}</button>
+        </div>
+      </section>
     </template>
   </section>
 </template>

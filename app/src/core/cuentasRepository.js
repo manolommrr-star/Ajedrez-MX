@@ -67,6 +67,8 @@ const CUENTAS = [
     organizadorId: 'org-demo',
     organizacion: 'Club de Ajedrez Xalapa',
     correoVerificado: true,
+    // Fecha de ejemplo: en la demo los términos se "aceptaron" al instalarse.
+    fechaAceptacion: '2026-01-02T18:00:00.000Z',
     demo: true,
     // Datos de prueba del panel de cobros (misma forma que el registro).
     datosOrganizador: { ...datosOrganizadorDemo }
@@ -154,6 +156,21 @@ function registrarIntentoFallido(cuenta) {
   return MAX_INTENTOS - cuenta.intentosFallidos;
 }
 
+/**
+ * Perfil de organizador derivado de la cuenta.
+ * Fuente única: lo usan la sesión y la exportación de datos, para que no se
+ * arme de dos formas distintas.
+ */
+export function perfilOrganizador(cuenta) {
+  if (!cuenta || cuenta.rol !== 'organizer' || !cuenta.organizadorId) return null;
+  return {
+    id: cuenta.organizadorId,
+    nombre: cuenta.organizacion || cuenta.nombre,
+    email: cuenta.email,
+    ...(cuenta.datosOrganizador || {})
+  };
+}
+
 export const CuentasRepository = {
   /**
    * Registra una cuenta con rol (demo).
@@ -212,6 +229,10 @@ export const CuentasRepository = {
         clabe: String(extras.clabe || '').trim(),
         mpEstado: extras.mpEstado || 'conectado'
       };
+      // Base legal: la vista exige aceptar términos antes de crear la cuenta
+      // (el jugador no los pide hoy) y se guarda la fecha de aceptación.
+      cuenta.aceptaTerminos = Boolean(extras.aceptaTerminos);
+      cuenta.fechaAceptacion = cuenta.aceptaTerminos ? new Date().toISOString() : null;
     }
 
     CUENTAS.push(cuenta);
@@ -269,6 +290,37 @@ export const CuentasRepository = {
     cuenta.correoVerificado = true;
     guardar();
     return { ok: true, cuenta };
+  },
+
+  /**
+   * Elimina la cuenta tras validar la contraseña (derecho de supresión).
+   *
+   * El perfil de jugador se anonimiza en vez de borrarse y las inscripciones y
+   * pagos se conservan: son registros de cobro. Los torneos publicados por un
+   * organizador tampoco se borran.
+   */
+  async eliminarCuenta({ id, clave }) {
+    await cuentasListas;
+    const cuenta = CUENTAS.find((c) => c.id === id);
+    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
+    const hash = await hashClave(String(clave || ''));
+    if (hash !== cuenta.claveHash) return { ok: false, motivo: 'La contraseña no es correcta.' };
+
+    if (cuenta.rol === 'player' && cuenta.playerId) {
+      await PlayersRepository.anonimizar(cuenta.playerId);
+    }
+    CUENTAS.splice(CUENTAS.indexOf(cuenta), 1);
+    guardar();
+
+    if (cuenta.demo) {
+      const claves = leerMapa(CLAVE_DEMO_ALMACEN);
+      delete claves[cuenta.email];
+      escribirMapa(CLAVE_DEMO_ALMACEN, claves);
+    }
+    const pendiente = leerMapa(CLAVE_RECUPERACION);
+    if (pendiente.email === cuenta.email) escribirMapa(CLAVE_RECUPERACION, {});
+
+    return { ok: true };
   },
 
   async getPorId(id) {

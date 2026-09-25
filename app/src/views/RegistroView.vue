@@ -131,7 +131,9 @@ async function enviar() {
         clabe: datos.clabe.trim(),
         // Demo: "conectar Mercado Pago" simula el OAuth Authorization Code;
         // en producción el access_token lo devuelve el backend.
-        mpEstado: 'conectado'
+        mpEstado: 'conectado',
+        // Base legal: la vista exige aceptar términos antes de crear la cuenta.
+        aceptaTerminos: datos.aceptaTerminos
       }
     : {
         fideId: datos.fideId, elo: datos.elo, club: datos.club,

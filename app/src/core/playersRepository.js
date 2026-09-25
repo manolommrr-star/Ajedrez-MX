@@ -78,5 +78,22 @@ export const PlayersRepository = {
       }
     }
     return jugador;
+  },
+
+  /**
+   * Borra los datos personales del jugador y lo deja como "Eliminado".
+   * No se quita la fila del repositorio: las inscripciones y los pagos la
+   * referencian y deben conservarse como registro de cobro.
+   */
+  async anonimizar(id) {
+    const jugador = JUGADORES_DEMO.find((p) => p.id === id);
+    if (!jugador) return null;
+    const personales = [
+      'apellidos', 'fechaNacimiento', 'fideId', 'federacion', 'club',
+      'titulo', 'sexo', 'email', 'telefono', 'ciudad', 'estado'
+    ];
+    for (const campo of personales) jugador[campo] = null;
+    jugador.nombre = 'Eliminado';
+    return jugador;
   }
 };

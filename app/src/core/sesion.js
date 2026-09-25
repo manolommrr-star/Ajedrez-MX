@@ -5,7 +5,7 @@
  * se reemplaza por supabase.auth (sesión real); la interfaz no cambia.
  * Según el rol de la cuenta expone el perfil de jugador o de organizador.
  */
-import { CuentasRepository, cuentasListas } from './cuentasRepository.js';
+import { CuentasRepository, cuentasListas, perfilOrganizador } from './cuentasRepository.js';
 import { PlayersRepository } from './playersRepository.js';
 
 const CLAVE_SESION = 'ajedrezmx-cuenta-demo';
@@ -54,14 +54,7 @@ export const Sesion = {
 
   /** Perfil de organizador de la sesión (solo cuentas rol organizer). */
   async getOrganizador() {
-    const cuenta = await this.getCuenta();
-    if (!cuenta || cuenta.rol !== 'organizer' || !cuenta.organizadorId) return null;
-    return {
-      id: cuenta.organizadorId,
-      nombre: cuenta.organizacion || cuenta.nombre,
-      email: cuenta.email,
-      ...(cuenta.datosOrganizador || {})
-    };
+    return perfilOrganizador(await this.getCuenta());
   },
 
   /** Cierra la sesión y olvida la cuenta guardada. */
