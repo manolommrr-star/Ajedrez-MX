@@ -59,7 +59,8 @@ export const Sesion = {
     return {
       id: cuenta.organizadorId,
       nombre: cuenta.organizacion || cuenta.nombre,
-      email: cuenta.email
+      email: cuenta.email,
+      ...(cuenta.datosOrganizador || {})
     };
   },
 

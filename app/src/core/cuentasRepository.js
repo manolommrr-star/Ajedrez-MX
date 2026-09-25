@@ -120,6 +120,22 @@ export const CuentasRepository = {
     } else {
       cuenta.organizacion = String(extras.organizacion || cuenta.nombre).trim();
       cuenta.organizadorId = generarId('org');
+      cuenta.datosOrganizador = {
+        organizacion: cuenta.organizacion,
+        giro: extras.giro || 'Club o academia',
+        telefono: String(extras.telefono || '').trim(),
+        ciudad: String(extras.ciudad || '').trim(),
+        estado: String(extras.estado || '').trim(),
+        web: String(extras.web || '').trim(),
+        mpEmail: String(extras.mpEmail || correo).trim().toLowerCase(),
+        tipoPersona: extras.tipoPersona || 'fisica',
+        rfc: String(extras.rfc || '').trim().toUpperCase(),
+        razonSocial: String(extras.razonSocial || '').trim(),
+        regimen: String(extras.regimen || '605').trim(),
+        cpFiscal: String(extras.cpFiscal || '').trim(),
+        clabe: String(extras.clabe || '').trim(),
+        mpEstado: extras.mpEstado || 'conectado'
+      };
     }
 
     CUENTAS.push(cuenta);
