@@ -17,6 +17,9 @@ const CLAVE_DEMO = 'demo1234';
 const CLAVE_DEMO_ALMACEN = 'ajedrezmx-claves-demo';
 const CLAVE_RECUPERACION = 'ajedrezmx-recuperacion';
 const RECUPERACION_MINUTOS = 15;
+/* Seguridad de acceso: bloqueo temporal tras varios intentos fallidos. */
+const MAX_INTENTOS = 5;
+const BLOQUEO_MINUTOS = 10;
 
 /**
  * Datos de cuenta y cobro de la cuenta de prueba de organizador.
@@ -52,6 +55,8 @@ const CUENTAS = [
     apellidos: 'Torres',
     email: 'ana.torres@correo.mx',
     playerId: 'j1',
+    // Sin verificar a propósito: así se puede probar el aviso de "Mi cuenta".
+    correoVerificado: false,
     demo: true
   },
   {
@@ -61,6 +66,7 @@ const CUENTAS = [
     email: 'contacto@ajedrezxalapa.mx',
     organizadorId: 'org-demo',
     organizacion: 'Club de Ajedrez Xalapa',
+    correoVerificado: true,
     demo: true,
     // Datos de prueba del panel de cobros (misma forma que el registro).
     datosOrganizador: { ...datosOrganizadorDemo }
@@ -119,6 +125,35 @@ function soloDefinidos(obj) {
   return salida;
 }
 
+/**
+ * Minutos que le quedan de bloqueo a una cuenta (0 si no está bloqueada).
+ * Al vencer el plazo se limpia sola: el bloqueo es temporal, no permanente.
+ */
+function minutosDeBloqueo(cuenta) {
+  if (!cuenta.bloqueadaHasta) return 0;
+  const restante = cuenta.bloqueadaHasta - Date.now();
+  if (restante <= 0) {
+    cuenta.bloqueadaHasta = null;
+    cuenta.intentosFallidos = 0;
+    return 0;
+  }
+  return Math.ceil(restante / 60000);
+}
+
+/**
+ * Suma un intento fallido y, al llegar al máximo, bloquea la cuenta.
+ * Devuelve cuántos intentos quedan antes del bloqueo.
+ */
+function registrarIntentoFallido(cuenta) {
+  cuenta.intentosFallidos = (cuenta.intentosFallidos || 0) + 1;
+  if (cuenta.intentosFallidos >= MAX_INTENTOS) {
+    cuenta.bloqueadaHasta = Date.now() + BLOQUEO_MINUTOS * 60 * 1000;
+    cuenta.intentosFallidos = 0;
+  }
+  guardar();
+  return MAX_INTENTOS - cuenta.intentosFallidos;
+}
+
 export const CuentasRepository = {
   /**
    * Registra una cuenta con rol (demo).
@@ -149,7 +184,9 @@ export const CuentasRepository = {
       apellidos: String(apellidos || '').trim(),
       email: correo,
       claveHash: await hashClave(String(clave)),
-      fechaCreacion: new Date().toISOString().slice(0, 10)
+      fechaCreacion: new Date().toISOString().slice(0, 10),
+      // El registro no confirma el correo: se verifica desde "Mi cuenta".
+      correoVerificado: false
     };
 
     if (rol === 'player') {
@@ -182,14 +219,55 @@ export const CuentasRepository = {
     return { ok: true, cuenta };
   },
 
-  /** Verifica correo + contraseña (demo). */
+  /**
+   * Verifica correo + contraseña (demo).
+   *
+   * Lleva la cuenta de intentos fallidos: al llegar al máximo la bloquea de
+   * forma temporal y, al entrar bien, registra el último acceso.
+   */
   async acceder({ email, clave }) {
     await cuentasListas;
     const correo = String(email || '').trim().toLowerCase();
     const cuenta = CUENTAS.find((c) => c.email === correo);
     if (!cuenta) return { ok: false, motivo: 'Correo o contraseña incorrectos.' };
+
+    const minutos = minutosDeBloqueo(cuenta);
+    if (minutos > 0) {
+      return {
+        ok: false,
+        motivo: `Cuenta bloqueada por intentos fallidos. Inténtalo en ${minutos} min.`
+      };
+    }
+
     const hash = await hashClave(String(clave || ''));
-    if (hash !== cuenta.claveHash) return { ok: false, motivo: 'Correo o contraseña incorrectos.' };
+    if (hash !== cuenta.claveHash) {
+      const restantes = registrarIntentoFallido(cuenta);
+      // Aviso de intentos restantes solo cuando quedan pocos: no ayuda a
+      // probar contraseñas de una en una.
+      const aviso = restantes > 0 && restantes <= 2
+        ? ` Te quedan ${restantes} ${restantes === 1 ? 'intento' : 'intentos'}.`
+        : '';
+      return { ok: false, motivo: `Correo o contraseña incorrectos.${aviso}` };
+    }
+
+    cuenta.intentosFallidos = 0;
+    cuenta.bloqueadaHasta = null;
+    cuenta.ultimoAcceso = new Date().toISOString();
+    guardar();
+    return { ok: true, cuenta };
+  },
+
+  /**
+   * Marca el correo de la cuenta como verificado.
+   * Demo: sustituye al enlace de confirmación de Supabase
+   * (supabase.auth.verifyOtp con token de un solo uso).
+   */
+  async verificarCorreo(id) {
+    await cuentasListas;
+    const cuenta = CUENTAS.find((c) => c.id === id);
+    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
+    cuenta.correoVerificado = true;
+    guardar();
     return { ok: true, cuenta };
   },
 
@@ -230,6 +308,8 @@ export const CuentasRepository = {
       if (CUENTAS.some((c) => c.id !== cuenta.id && c.email === correo)) {
         return { ok: false, motivo: 'Ese correo ya está registrado.' };
       }
+      // Cambiar el correo invalida la verificación anterior.
+      if (correo !== cuenta.email) cuenta.correoVerificado = false;
       cuenta.email = correo;
     }
     if (cambios.nombre !== undefined) {
@@ -287,6 +367,9 @@ export const CuentasRepository = {
     }
     const motivo = claveAceptable(claveNueva);
     if (motivo) return { ok: false, motivo };
+    // Quien demuestra la clave actual no es un atacante: se levanta el bloqueo.
+    cuenta.intentosFallidos = 0;
+    cuenta.bloqueadaHasta = null;
     await this._fijarClave(cuenta, claveNueva);
     return { ok: true };
   },
@@ -329,6 +412,9 @@ export const CuentasRepository = {
     if (motivo) return { ok: false, motivo };
     const cuenta = CUENTAS.find((c) => c.email === correo);
     if (!cuenta) return { ok: false, motivo: 'No hay cuenta con ese correo.' };
+    // Restablecer la contraseña también levanta el bloqueo por intentos.
+    cuenta.intentosFallidos = 0;
+    cuenta.bloqueadaHasta = null;
     await this._fijarClave(cuenta, claveNueva);
     escribirMapa(CLAVE_RECUPERACION, {});
     return { ok: true };

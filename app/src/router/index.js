@@ -3,6 +3,7 @@
  */
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { Sesion } from '@/core/sesion.js';
+import { evaluarAcceso } from './guardas.js';
 
 import CatalogoView from '@/views/CatalogoView.vue';
 import TorneoDetalleView from '@/views/TorneoDetalleView.vue';
@@ -20,7 +21,7 @@ const rutas = [
   { path: '/torneo/:id', name: 'torneo', component: TorneoDetalleView },
   { path: '/torneo/:id/inscribirse', name: 'inscribirse', component: InscripcionView },
   { path: '/pagar/:folio', name: 'pagar', component: PagarView },
-  { path: '/mis-inscripciones', name: 'mis-inscripciones', component: MisInscripcionesView },
+  { path: '/mis-inscripciones', name: 'mis-inscripciones', component: MisInscripcionesView, meta: { requiereSesion: true, requiereJugador: true } },
   { path: '/registro', name: 'registro', component: RegistroView },
   { path: '/acceder', name: 'acceder', component: AccederView },
   { path: '/mi-cuenta', name: 'mi-cuenta', component: MiCuentaView, meta: { requiereSesion: true } },
@@ -51,19 +52,14 @@ export const router = createRouter({
 });
 
 /**
- * Guardas de ruta: el panel exige organizador y `requiereSesion` acepta
- * cualquier cuenta (Mi cuenta). Sin sesión → acceder con redirección.
+ * Guardas de ruta (la decisión vive en ./guardas.js): el panel exige
+ * organizador, /mis-inscripciones exige jugador y "Mi cuenta" solo una
+ * sesión abierta. Sin sesión → acceder, guardando la ruta para volver a ella.
  */
 router.beforeEach(async (to) => {
-  if (to.matched.some((r) => r.meta.requiereOrganizador)) {
-    const cuenta = await Sesion.getCuenta();
-    if (!cuenta) return { name: 'acceder', query: { redir: to.fullPath } };
-    if (cuenta.rol !== 'organizer') return { name: 'mis-inscripciones' };
-    return true;
-  }
-  if (to.matched.some((r) => r.meta.requiereSesion)) {
-    const cuenta = await Sesion.getCuenta();
-    if (!cuenta) return { name: 'acceder', query: { redir: to.fullPath } };
-  }
-  return true;
+  const decision = evaluarAcceso(to.meta, await Sesion.getCuenta());
+  if (decision === true) return true;
+  return decision.conRedir
+    ? { name: decision.nombre, query: { redir: to.fullPath } }
+    : { name: decision.nombre };
 });

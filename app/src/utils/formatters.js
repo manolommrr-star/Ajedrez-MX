@@ -63,6 +63,23 @@ export const Formatters = {
     return Math.round((f - hoyUtc) / 86_400_000);
   },
 
+  /**
+   * Marca de tiempo ISO → '25 de septiembre de 2026, 14:32' ('' si es inválida).
+   * Para datos con hora y fecha (último acceso a la cuenta).
+   */
+  fechaHora(iso) {
+    if (typeof iso !== 'string' || !iso) return '';
+    const f = new Date(iso);
+    if (Number.isNaN(f.getTime())) return '';
+    return f.toLocaleString('es-MX', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  },
+
   /** Devuelve el singular o el plural según el número. */
   plural(n, singular, plural) {
     return `${n} ${n === 1 ? singular : plural}`;

@@ -13,11 +13,14 @@ import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 import { esCorreo, claveAceptable } from '@/utils/validacionesCuenta.js';
 import { GIROS, ESTADOS_MX } from '@/data/catalogosCuenta.js';
+import { Formatters } from '@/utils/formatters.js';
 
 const { estado, asegurarSesion, refrescarSesion } = useSesion();
 
 const esOrganizador = computed(() => estado.cuenta?.rol === 'organizer');
 const rolTexto = computed(() => (esOrganizador.value ? 'Organizador' : 'Jugador'));
+const correoVerificado = computed(() => Boolean(estado.cuenta?.correoVerificado));
+const ultimoAcceso = computed(() => Formatters.fechaHora(estado.cuenta?.ultimoAcceso));
 
 const cuentaF = reactive({ nombre: '', apellidos: '', email: '' });
 const jugadorF = reactive({
@@ -61,6 +64,16 @@ onMounted(async () => {
   await asegurarSesion();
   cargar();
 });
+
+/** Confirma el correo (demo: sustituye al enlace de confirmación por correo). */
+async function verificarCorreo() {
+  guardando.value = 'verificar';
+  const r = await CuentasRepository.verificarCorreo(estado.cuenta.id);
+  guardando.value = '';
+  if (!r.ok) { notificar(r.motivo); return; }
+  await refrescarSesion();
+  notificar('Correo verificado.');
+}
 
 /** Identidad de la cuenta (el repositorio la espeja al perfil del rol). */
 async function guardarCuenta() {
@@ -166,6 +179,22 @@ async function guardarClave() {
           <p v-if="esOrganizador" class="campo-ayuda">
             Los datos de cobro y fiscales se ven en
             <RouterLink to="/panel/cobros">Cobros y cuenta</RouterLink>.
+          </p>
+
+          <div v-if="!correoVerificado" class="aviso aviso-dorado">
+            <p>
+              Tu correo aún no está verificado.
+              <button
+                type="button"
+                class="boton boton-texto"
+                :disabled="guardando === 'verificar'"
+                @click="verificarCorreo"
+              >Verificar ahora (demo)</button>
+            </p>
+          </div>
+          <p v-else class="campo-ayuda">Correo verificado.</p>
+          <p class="campo-ayuda">
+            Último acceso: {{ ultimoAcceso || 'este es tu primer acceso' }}.
           </p>
         </div>
         <div class="acciones-form">
