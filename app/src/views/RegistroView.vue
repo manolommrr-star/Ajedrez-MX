@@ -215,7 +215,8 @@ async function enviar() {
           <input v-model="datos.aceptaTerminos" type="checkbox">
           <span>
             <span class="opcion-desc">
-              Acepto los términos del servicio y el aviso de privacidad; entiendo que
+              Acepto los <RouterLink to="/terminos">términos del servicio</RouterLink> y el
+              <RouterLink to="/privacidad">aviso de privacidad</RouterLink>; entiendo que
               mis datos fiscales (RFC, CLABE) se usan para generar cobros y comprobantes.
             </span>
           </span>

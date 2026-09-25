@@ -409,7 +409,9 @@ async function eliminarCuenta() {
             No incluye contraseñas ni tokens de acceso.
           </p>
           <p v-if="esOrganizador" class="campo-ayuda">
-            Términos y aviso de privacidad aceptados el {{ fechaAceptacion || 'sin registro' }}.
+            <RouterLink to="/terminos">Términos</RouterLink> y
+            <RouterLink to="/privacidad">aviso de privacidad</RouterLink> aceptados el
+            {{ fechaAceptacion || 'sin registro' }}.
           </p>
         </div>
         <div class="acciones-form">

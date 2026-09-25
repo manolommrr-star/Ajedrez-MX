@@ -13,6 +13,8 @@ import RegistroView from '@/views/RegistroView.vue';
 import AccederView from '@/views/AccederView.vue';
 import MiCuentaView from '@/views/MiCuentaView.vue';
 import RecuperarView from '@/views/RecuperarView.vue';
+import TerminosView from '@/views/TerminosView.vue';
+import PrivacidadView from '@/views/PrivacidadView.vue';
 import PagarView from '@/views/PagarView.vue';
 import PanelLayout from '@/views/panel/PanelLayout.vue';
 
@@ -26,6 +28,9 @@ const rutas = [
   { path: '/acceder', name: 'acceder', component: AccederView },
   { path: '/mi-cuenta', name: 'mi-cuenta', component: MiCuentaView, meta: { requiereSesion: true } },
   { path: '/recuperar', name: 'recuperar', component: RecuperarView },
+  /* Documentos legales: los enlazan el registro, "Mi cuenta" y el pie. */
+  { path: '/terminos', name: 'terminos', component: TerminosView },
+  { path: '/privacidad', name: 'privacidad', component: PrivacidadView },
 
   /* Panel del organizador: layout con rutas hijas */
   {

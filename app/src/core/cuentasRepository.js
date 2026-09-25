@@ -21,6 +21,9 @@ const RECUPERACION_MINUTOS = 15;
 /* Seguridad de acceso: bloqueo temporal tras varios intentos fallidos. */
 const MAX_INTENTOS = 5;
 const BLOQUEO_MINUTOS = 10;
+/* Recuperación: intentos por código y reenvíos permitidos en la misma ventana. */
+const MAX_INTENTOS_CODIGO = 5;
+const MAX_PEDIDOS_CODIGO = 3;
 
 /**
  * Datos de cuenta y cobro de la cuenta de prueba de organizador.
@@ -486,11 +489,26 @@ export const CuentasRepository = {
     const correo = String(email || '').trim().toLowerCase();
     const cuenta = CUENTAS.find((c) => c.email === correo);
     if (!cuenta) return { ok: false, motivo: 'No hay cuenta con ese correo.' };
+
+    const ahora = Date.now();
+    const pendiente = leerMapa(CLAVE_RECUPERACION);
+    // Solo cuentan los reenvíos del mismo código aún vigente.
+    const vigente = pendiente.email === correo && pendiente.expira > ahora;
+    const pedidos = (vigente ? pendiente.pedidos || 0 : 0);
+    if (vigente && pedidos >= MAX_PEDIDOS_CODIGO) {
+      return {
+        ok: false,
+        motivo: 'Ya pediste varios códigos seguidos. Espera unos minutos e inténtalo de nuevo.'
+      };
+    }
+
     const codigo = String(Math.floor(100000 + Math.random() * 900000));
     escribirMapa(CLAVE_RECUPERACION, {
       email: correo,
       codigo,
-      expira: Date.now() + RECUPERACION_MINUTOS * 60 * 1000
+      expira: ahora + RECUPERACION_MINUTOS * 60 * 1000,
+      intentos: 0,
+      pedidos: pedidos + 1
     });
     return { ok: true, codigo };
   },
@@ -507,8 +525,23 @@ export const CuentasRepository = {
       escribirMapa(CLAVE_RECUPERACION, {});
       return { ok: false, motivo: 'El código expiró. Solicita uno nuevo.' };
     }
+    if ((pendiente.intentos || 0) >= MAX_INTENTOS_CODIGO) {
+      // El código se agotó: se invalida, aunque el jugador lo acierte ahora.
+      escribirMapa(CLAVE_RECUPERACION, {});
+      return { ok: false, motivo: 'Demasiados intentos con ese código. Solicita uno nuevo.' };
+    }
     if (String(codigo || '').trim() !== String(pendiente.codigo)) {
-      return { ok: false, motivo: 'El código no coincide.' };
+      // Los intentos se cuentan por código: un código de 6 dígitos no es
+      // adivinable indefinidamente.
+      const intentos = (pendiente.intentos || 0) + 1;
+      escribirMapa(CLAVE_RECUPERACION, { ...pendiente, intentos });
+      const quedan = MAX_INTENTOS_CODIGO - intentos;
+      return {
+        ok: false,
+        motivo: quedan > 0
+          ? `El código no coincide. Te quedan ${quedan} ${quedan === 1 ? 'intento' : 'intentos'}.`
+          : 'Demasiados intentos con ese código. Solicita uno nuevo.'
+      };
     }
     const motivo = claveAceptable(claveNueva);
     if (motivo) return { ok: false, motivo };
