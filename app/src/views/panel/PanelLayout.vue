@@ -14,7 +14,8 @@ const { estado, cerrarSesion, refrescarSesion } = useSesion();
 const SECCIONES = [
   { nombre: 'panel-resumen', texto: 'Inicio' },
   { nombre: 'panel-torneos', texto: 'Mis torneos' },
-  { nombre: 'panel-crear', texto: 'Crear torneo' }
+  { nombre: 'panel-crear', texto: 'Crear torneo' },
+  { nombre: 'panel-cobros', texto: 'Cobros y cuenta' }
 ];
 
 const menuAbierto = ref(false);

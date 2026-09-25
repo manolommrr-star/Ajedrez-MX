@@ -31,6 +31,7 @@ const rutas = [
       { path: '', name: 'panel-resumen', component: () => import('@/views/panel/PanelInicioView.vue') },
       { path: 'torneos', name: 'panel-torneos', component: () => import('@/views/panel/TorneosView.vue') },
       { path: 'crear', name: 'panel-crear', component: () => import('@/views/panel/CrearTorneoView.vue') },
+      { path: 'cobros', name: 'panel-cobros', component: () => import('@/views/panel/CobrosView.vue') },
       { path: 'torneo/:id/editar', name: 'panel-editar', component: () => import('@/views/panel/CrearTorneoView.vue'), props: true },
       { path: 'torneo/:id', name: 'panel-torneo-detalle', component: () => import('@/views/panel/TorneoDetalleView.vue'), props: true }
     ]

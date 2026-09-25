@@ -11,10 +11,34 @@
  */
 import { buildCategoriasTorneo } from './catalogoCategorias.js';
 
+/**
+ * Organizador de demostración: perfil base + datos de cuenta y cobro.
+ *
+ * Los campos `organizacion … mpEstado` tienen LA MISMA FORMA que
+ * `cuenta.datosOrganizador` (la que guarda el registro en 3 pasos), así el
+ * panel de cobros consume la misma estructura venga de la cuenta de prueba o
+ * del fallback de datos. Son datos de PRUEBA: RFC/CLABE ficticios pero con
+ * formato y dígito verificador válidos.
+ */
 export const ORGANIZADOR_DEMO = {
   id: 'org-demo',
   nombre: 'Club de Ajedrez Xalapa',
-  email: 'contacto@ajedrezxalapa.mx'
+  email: 'contacto@ajedrezxalapa.mx',
+  organizacion: 'Club de Ajedrez Xalapa',
+  giro: 'Club o academia',
+  telefono: '2281234567',
+  ciudad: 'Xalapa',
+  estado: 'Veracruz',
+  web: 'https://ajedrezxalapa.mx',
+  mpEmail: 'contacto@ajedrezxalapa.mx',
+  tipoPersona: 'moral',
+  rfc: 'CAX850101H23',
+  razonSocial: 'Club de Ajedrez Xalapa, A.C.',
+  regimen: '601',
+  cpFiscal: '91000',
+  // 18 dígitos; DV calculado con módulo 10 (pesos 3-7-1), validado en smoke.
+  clabe: '012180000123456782',
+  mpEstado: 'conectado'
 };
 
 export const EVENTOS_DEMO = [

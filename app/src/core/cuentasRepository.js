@@ -8,10 +8,18 @@
  */
 import { PlayersRepository } from './playersRepository.js';
 import { generarId } from '../utils/ids.js';
+import { ORGANIZADOR_DEMO } from '../data/mockRelacional.js';
 
 const CLAVE_ALMACEN = 'ajedrezmx-cuentas-demo';
 const CLAVE_DEMO = 'demo1234';
 const CLAVE_MINIMA = 8;
+
+/**
+ * Datos de cuenta y cobro de la cuenta de prueba de organizador.
+ * Se toman de ORGANIZADOR_DEMO (fuente única) descartando el perfil base
+ * (id/nombre/email), que vive en la cuenta y no dentro de los datos.
+ */
+const { id: _orgId, nombre: _orgNombre, email: _orgEmail, ...datosOrganizadorDemo } = ORGANIZADOR_DEMO;
 
 /** Hash demo de la contraseña (SHA-256; respaldo simple si no hay crypto). */
 async function hashClave(clave) {
@@ -49,7 +57,9 @@ const CUENTAS = [
     email: 'contacto@ajedrezxalapa.mx',
     organizadorId: 'org-demo',
     organizacion: 'Club de Ajedrez Xalapa',
-    demo: true
+    demo: true,
+    // Datos de prueba del panel de cobros (misma forma que el registro).
+    datosOrganizador: { ...datosOrganizadorDemo }
   }
 ];
 

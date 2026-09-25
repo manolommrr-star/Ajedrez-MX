@@ -41,6 +41,10 @@ const proximos = computed(() =>
 const activos = computed(() =>
   torneos.value.filter((t) => t.fecha < hoy.value && t.estadoPublicacion === 'publicado'));
 
+/** Resumen de Mercado Pago del panel (datos completos en "Cobros y cuenta"). */
+const mpConectado = computed(() => perfil.value?.mpEstado === 'conectado');
+const mpEmail = computed(() => perfil.value?.mpEmail || perfil.value?.email || '');
+
 function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id } }); }
 </script>
 
@@ -54,7 +58,21 @@ function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id
     <div class="panel-fila-accesos">
       <RouterLink :to="{name:'panel-torneos'}" class="acceso">Mis torneos</RouterLink>
       <RouterLink :to="{name:'panel-crear'}" class="acceso">Crear torneo</RouterLink>
+      <RouterLink :to="{name:'panel-cobros'}" class="acceso">Cobros y cuenta</RouterLink>
     </div>
+
+    <!-- Resumen de Mercado Pago (detalle completo en "Cobros y cuenta") -->
+    <section class="panel-seccion" v-if="perfil">
+      <h2>Mercado Pago</h2>
+      <RouterLink :to="{name:'panel-cobros'}" class="mp-tarjeta" :class="mpConectado ? 'ok' : 'pend'">
+        <span class="mp-punto" aria-hidden="true"></span>
+        <span class="mp-datos">
+          <strong>{{ mpConectado ? 'Conectado' : 'Pendiente de conexión' }}</strong>
+          <span class="mp-correo">{{ mpEmail }}</span>
+        </span>
+        <span class="panel-accion">Ver datos →</span>
+      </RouterLink>
+    </section>
 
     <section class="panel-seccion" v-if="proximos.length">
       <h2>Próximos torneos</h2>
@@ -121,4 +139,19 @@ function irTorneo(id) { router.push({ name: 'panel-torneo-detalle', params: { id
 .panel-accion { font-size: 0.8rem; color: var(--texto-suave); flex-shrink: 0; }
 .panel-vacio { text-align: center; padding: 3rem; border: 1px dashed var(--borde-fuerte); border-radius: var(--radio); }
 .panel-vacio p { margin: 0 0 1rem; color: var(--texto-suave); }
+
+/* Resumen de Mercado Pago (enlaza a "Cobros y cuenta") */
+.mp-tarjeta {
+  display: flex; align-items: center; gap: 0.75rem; padding: 1rem;
+  border: 1px solid var(--borde); border-left: 4px solid var(--verde);
+  border-radius: var(--radio); background: var(--superficie);
+  text-decoration: none; color: var(--texto);
+}
+.mp-tarjeta:hover { background: var(--superficie-3); border-color: var(--verde); }
+.mp-tarjeta.pend { border-left-color: var(--dorado); }
+.mp-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--verde); flex-shrink: 0; }
+.mp-tarjeta.pend .mp-punto { background: var(--dorado); }
+.mp-datos { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.mp-datos strong { font-size: 0.95rem; }
+.mp-correo { font-size: 0.8rem; color: var(--texto-suave); overflow-wrap: anywhere; }
 </style>

@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router';
 import { CuentasRepository } from '@/core/cuentasRepository.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
+import { REGIMENES } from '@/data/catalogoFiscal.js';
 
 const router = useRouter();
 const { iniciarSesion } = useSesion();
@@ -35,18 +36,6 @@ const ESTADOS_MX = [
   'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa',
   'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán',
   'Zacatecas'
-];
-
-const REGIMENES = [
-  { codigo: '601', texto: '601 · General de Ley Personas Morales' },
-  { codigo: '603', texto: '603 · Personas morales sin fines de lucro' },
-  { codigo: '605', texto: '605 · Sueldos y salarios' },
-  { codigo: '606', texto: '606 · Arrendamiento' },
-  { codigo: '607', texto: '607 · Régimen de incorporación fiscal' },
-  { codigo: '608', texto: '608 · Demás ingresos' },
-  { codigo: '611', texto: '611 · Venta de bienes' },
-  { codigo: '612', texto: '612 · Actividades empresariales (RESICO PF)' },
-  { codigo: '614', texto: '614 · Actividades profesionales (RESICO PF)' }
 ];
 
 const datos = reactive({
