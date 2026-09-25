@@ -54,5 +54,29 @@ export const PlayersRepository = {
     };
     JUGADORES_DEMO.push(nuevo);
     return nuevo;
+  },
+
+  /**
+   * Actualiza campos del jugador (edición desde "Mi cuenta").
+   * En Supabase: update players set … where id = $playerId.
+   * Solo los campos permitidos; vacíos → null (misma forma que crearJugador).
+   */
+  async actualizar(id, cambios = {}) {
+    const jugador = JUGADORES_DEMO.find((p) => p.id === id);
+    if (!jugador) return null;
+    const permitidos = [
+      'nombre', 'apellidos', 'fechaNacimiento', 'fideId', 'federacion',
+      'club', 'elo', 'titulo', 'sexo', 'email', 'telefono', 'ciudad', 'estado'
+    ];
+    for (const campo of permitidos) {
+      if (cambios[campo] === undefined) continue;
+      const texto = String(cambios[campo] ?? '').trim();
+      if (campo === 'elo') {
+        jugador.elo = texto === '' ? null : Number(texto);
+      } else {
+        jugador[campo] = texto === '' ? null : texto;
+      }
+    }
+    return jugador;
   }
 };

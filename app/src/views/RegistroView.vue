@@ -16,27 +16,11 @@ import { CuentasRepository } from '@/core/cuentasRepository.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 import { REGIMENES } from '@/data/catalogoFiscal.js';
+import { GIROS, ESTADOS_MX } from '@/data/catalogosCuenta.js';
+import { esCorreo, claveAceptable } from '@/utils/validacionesCuenta.js';
 
 const router = useRouter();
 const { iniciarSesion } = useSesion();
-
-const GIROS = [
-  'Club o academia',
-  'Federación/Asociación',
-  'Escuela',
-  'Empresa',
-  'Organizador particular'
-];
-
-const ESTADOS_MX = [
-  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche',
-  'Chiapas', 'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima',
-  'Durango', 'Estado de México', 'Guanajuato', 'Guerrero', 'Hidalgo',
-  'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca',
-  'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa',
-  'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán',
-  'Zacatecas'
-];
 
 const datos = reactive({
   rol: 'player', nombre: '', apellidos: '', email: '', clave: '', confirmar: '',
@@ -58,11 +42,6 @@ const paso = ref(1);
 watch(esOrganizador, (ahora) => { if (!ahora) paso.value = 1; });
 
 const enviando = ref(false);
-
-/** Correo con forma válida. */
-function esCorreo(valor) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor || '').trim());
-}
 
 /** CLABE de 18 dígitos con dígito verificador correcto (módulo 10, pesos 3-7-1). */
 function clabeValida(clabe) {
@@ -87,7 +66,8 @@ function rfcValido(rfc, tipo) {
 function validarCuenta() {
   if (!String(datos.nombre).trim()) return 'Escribe tu nombre.';
   if (!esCorreo(datos.email)) return 'Escribe un correo válido.';
-  if (String(datos.clave).length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+  const motivoClave = claveAceptable(datos.clave);
+  if (motivoClave) return motivoClave;
   if (datos.clave !== datos.confirmar) return 'Las contraseñas no coinciden.';
   if (esOrganizador.value && !datos.aceptaTerminos) {
     return 'Debes aceptar los términos y el aviso de privacidad.';

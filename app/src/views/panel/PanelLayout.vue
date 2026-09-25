@@ -21,7 +21,6 @@ const SECCIONES = [
 const menuAbierto = ref(false);
 
 const nombrePerfil = computed(() => estado.organizador?.nombre || estado.cuenta?.nombre || '');
-const emailPerfil = computed(() => estado.organizador?.email || estado.cuenta?.email || '');
 
 onMounted(refrescarSesion);
 
@@ -44,7 +43,9 @@ async function salir() {
       <aside class="panel-lateral" :class="{ abierto: menuAbierto }">
         <div class="panel-perfil">
           <p class="panel-perfil-nombre">{{ nombrePerfil }}</p>
-          <p class="panel-perfil-rol">{{ emailPerfil }}</p>
+          <p class="panel-perfil-rol">
+            <RouterLink :to="{ name: 'mi-cuenta' }">Mi cuenta</RouterLink>
+          </p>
         </div>
 
         <nav class="panel-nav" aria-label="Navegación del panel">

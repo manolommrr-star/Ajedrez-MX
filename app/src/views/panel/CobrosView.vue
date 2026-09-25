@@ -4,8 +4,9 @@
  *
  * Muestra los datos de cobro de Mercado Pago que se capturan en el registro
  * en 3 pasos: estado de conexión, correo de la cuenta MP, CLABE (enmascarada
- * por defecto), organización y datos fiscales (RFC, razón social, régimen,
- * CP). En producción la verificación de identidad vive en Mercado Pago.
+ * por defecto) y datos fiscales (RFC, razón social, régimen, CP).
+ * La organización se edita en "Mi cuenta" (sin duplicarla aquí).
+ * En producción la verificación de identidad vive en Mercado Pago.
  */
 import { computed, onMounted, ref } from 'vue';
 import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
@@ -54,7 +55,10 @@ function copiarClabe() {
   <section class="cobros">
     <header class="cobros-header">
       <h1>Cobros y cuenta</h1>
-      <p class="cobros-sub">Datos de tu cuenta de cobro con Mercado Pago.</p>
+      <p class="cobros-sub">
+        Datos de tu cuenta de cobro con Mercado Pago.
+        La organización se edita en <RouterLink to="/mi-cuenta">Mi cuenta</RouterLink>.
+      </p>
     </header>
 
     <p v-if="cargando" class="cobros-cargando">Cargando…</p>
@@ -94,36 +98,6 @@ function copiarClabe() {
               <span class="etiqueta-estado" :class="conectado ? 'ok' : 'pend'">
                 {{ conectado ? 'Conectado' : 'Pendiente' }}
               </span>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel-seccion">
-        <h2>Organización</h2>
-        <div class="ficha">
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Organización</span>
-            <span class="ficha-valor">{{ perfil.organizacion || perfil.nombre }}</span>
-          </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Giro</span>
-            <span class="ficha-valor">{{ perfil.giro || '—' }}</span>
-          </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Celular</span>
-            <span class="ficha-valor mono">{{ perfil.telefono || '—' }}</span>
-          </div>
-          <div class="ficha-fila">
-            <span class="ficha-etiqueta">Ubicación</span>
-            <span class="ficha-valor">
-              {{ perfil.ciudad || '—' }}<template v-if="perfil.estado">, {{ perfil.estado }}</template>
-            </span>
-          </div>
-          <div class="ficha-fila" v-if="perfil.web">
-            <span class="ficha-etiqueta">Sitio web</span>
-            <span class="ficha-valor">
-              <a :href="perfil.web" target="_blank" rel="noopener">{{ perfil.web }}</a>
             </span>
           </div>
         </div>

@@ -8,11 +8,15 @@
  */
 import { PlayersRepository } from './playersRepository.js';
 import { generarId } from '../utils/ids.js';
+import { esCorreo, claveAceptable } from '../utils/validacionesCuenta.js';
 import { ORGANIZADOR_DEMO } from '../data/mockRelacional.js';
 
 const CLAVE_ALMACEN = 'ajedrezmx-cuentas-demo';
 const CLAVE_DEMO = 'demo1234';
-const CLAVE_MINIMA = 8;
+/* Contraseñas propias de las cuentas demo y códigos de recuperación pendientes. */
+const CLAVE_DEMO_ALMACEN = 'ajedrezmx-claves-demo';
+const CLAVE_RECUPERACION = 'ajedrezmx-recuperacion';
+const RECUPERACION_MINUTOS = 15;
 
 /**
  * Datos de cuenta y cobro de la cuenta de prueba de organizador.
@@ -89,6 +93,32 @@ async function hidratar() {
   }
 }
 
+/** Lee un mapa simple ({ llave: valor }) de localStorage con tolerancia a fallos. */
+function leerMapa(claveAlmacen) {
+  try {
+    return JSON.parse(window.localStorage.getItem(claveAlmacen) || '{}') || {};
+  } catch {
+    return {};
+  }
+}
+
+/** Escribe un mapa simple en localStorage (demo: sin almacenamiento, se omite). */
+function escribirMapa(claveAlmacen, mapa) {
+  try {
+    window.localStorage.setItem(claveAlmacen, JSON.stringify(mapa));
+  } catch { /* sin localStorage disponible */ }
+}
+
+/** Copia solo los campos definidos, recortando los de tipo texto. */
+function soloDefinidos(obj) {
+  const salida = {};
+  for (const [campo, valor] of Object.entries(obj || {})) {
+    if (valor === undefined) continue;
+    salida[campo] = typeof valor === 'string' ? valor.trim() : valor;
+  }
+  return salida;
+}
+
 export const CuentasRepository = {
   /**
    * Registra una cuenta con rol (demo).
@@ -97,7 +127,7 @@ export const CuentasRepository = {
   async registrar({ rol, nombre, apellidos = '', email, clave, extras = {} }) {
     await cuentasListas;
     const correo = String(email || '').trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    if (!esCorreo(correo)) {
       return { ok: false, motivo: 'Escribe un correo válido.' };
     }
     if (rol !== 'player' && rol !== 'organizer') {
@@ -106,9 +136,8 @@ export const CuentasRepository = {
     if (!String(nombre || '').trim()) {
       return { ok: false, motivo: 'El nombre es obligatorio.' };
     }
-    if (String(clave || '').length < CLAVE_MINIMA) {
-      return { ok: false, motivo: `La contraseña debe tener al menos ${CLAVE_MINIMA} caracteres.` };
-    }
+    const motivoClave = claveAceptable(clave);
+    if (motivoClave) return { ok: false, motivo: motivoClave };
     if (await this.existeEmail(correo)) {
       return { ok: false, motivo: 'Ese correo ya está registrado.' };
     }
@@ -179,6 +208,148 @@ export const CuentasRepository = {
   async getDemo(rol) {
     await cuentasListas;
     return CUENTAS.find((c) => c.demo && c.rol === rol) || null;
+  },
+
+  /**
+   * Actualiza datos de la cuenta y sus perfiles desde "Mi cuenta" (fuente única).
+   *
+   * - Validaciones compartidas: correo único y válida, nombre obligatorio.
+   * - Rol player: espeja nombre/apellidos/email al perfil de jugador
+   *   (PlayersRepository) y mantiene datosJugador para restaurar la sesión.
+   * - Rol organizer: mantiene organizacion y datosOrganizador sincronizados
+   *   (Sesion.getOrganizador se arma de aquí, sin duplicados).
+   */
+  async actualizar(id, cambios = {}) {
+    await cuentasListas;
+    const cuenta = CUENTAS.find((c) => c.id === id);
+    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
+
+    if (cambios.email !== undefined) {
+      const correo = String(cambios.email || '').trim().toLowerCase();
+      if (!esCorreo(correo)) return { ok: false, motivo: 'Escribe un correo válido.' };
+      if (CUENTAS.some((c) => c.id !== cuenta.id && c.email === correo)) {
+        return { ok: false, motivo: 'Ese correo ya está registrado.' };
+      }
+      cuenta.email = correo;
+    }
+    if (cambios.nombre !== undefined) {
+      const nombre = String(cambios.nombre || '').trim();
+      if (!nombre) return { ok: false, motivo: 'El nombre es obligatorio.' };
+      cuenta.nombre = nombre;
+    }
+    if (cambios.apellidos !== undefined) cuenta.apellidos = String(cambios.apellidos || '').trim();
+
+    if (cuenta.rol === 'player') {
+      if (cambios.datosJugador) {
+        cuenta.datosJugador = { ...cuenta.datosJugador, ...soloDefinidos(cambios.datosJugador) };
+      }
+      // La identidad de la cuenta es la fuente del perfil de jugador.
+      cuenta.datosJugador = {
+        ...cuenta.datosJugador,
+        nombre: cuenta.nombre,
+        apellidos: cuenta.apellidos,
+        email: cuenta.email
+      };
+      if (cuenta.playerId) {
+        await PlayersRepository.actualizar(cuenta.playerId, cuenta.datosJugador);
+      }
+    } else {
+      if (cambios.datosOrganizador) {
+        cuenta.datosOrganizador = {
+          ...cuenta.datosOrganizador,
+          ...soloDefinidos(cambios.datosOrganizador)
+        };
+        if (cuenta.datosOrganizador.organizacion) {
+          cuenta.organizacion = String(cuenta.datosOrganizador.organizacion).trim();
+        }
+      }
+      if (cambios.organizacion !== undefined) {
+        cuenta.organizacion = String(cambios.organizacion || '').trim();
+        cuenta.datosOrganizador = {
+          ...cuenta.datosOrganizador,
+          organizacion: cuenta.organizacion
+        };
+      }
+    }
+
+    guardar();
+    return { ok: true, cuenta };
+  },
+
+  /** Cambia la contraseña validando la actual (solo se guarda el hash). */
+  async cambiarClave({ id, claveActual, claveNueva }) {
+    await cuentasListas;
+    const cuenta = CUENTAS.find((c) => c.id === id);
+    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
+    const hashActual = await hashClave(String(claveActual || ''));
+    if (hashActual !== cuenta.claveHash) {
+      return { ok: false, motivo: 'La contraseña actual no es correcta.' };
+    }
+    const motivo = claveAceptable(claveNueva);
+    if (motivo) return { ok: false, motivo };
+    await this._fijarClave(cuenta, claveNueva);
+    return { ok: true };
+  },
+
+  /**
+   * Genera un código de un solo uso para restablecer la contraseña.
+   * Con Supabase: supabase.auth.resetPasswordForEmail(email).
+   * Demo: devuelve el código aquí (en producción lo enviaría el correo).
+   */
+  async solicitarRecuperacion(email) {
+    await cuentasListas;
+    const correo = String(email || '').trim().toLowerCase();
+    const cuenta = CUENTAS.find((c) => c.email === correo);
+    if (!cuenta) return { ok: false, motivo: 'No hay cuenta con ese correo.' };
+    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    escribirMapa(CLAVE_RECUPERACION, {
+      email: correo,
+      codigo,
+      expira: Date.now() + RECUPERACION_MINUTOS * 60 * 1000
+    });
+    return { ok: true, codigo };
+  },
+
+  /** Valida el código de recuperación (15 min, un solo uso) y fija la clave. */
+  async restablecerClave({ email, codigo, claveNueva }) {
+    await cuentasListas;
+    const correo = String(email || '').trim().toLowerCase();
+    const pendiente = leerMapa(CLAVE_RECUPERACION);
+    if (!pendiente.email || pendiente.email !== correo || !pendiente.codigo) {
+      return { ok: false, motivo: 'Solicita primero un código de recuperación.' };
+    }
+    if (Date.now() > pendiente.expira) {
+      escribirMapa(CLAVE_RECUPERACION, {});
+      return { ok: false, motivo: 'El código expiró. Solicita uno nuevo.' };
+    }
+    if (String(codigo || '').trim() !== String(pendiente.codigo)) {
+      return { ok: false, motivo: 'El código no coincide.' };
+    }
+    const motivo = claveAceptable(claveNueva);
+    if (motivo) return { ok: false, motivo };
+    const cuenta = CUENTAS.find((c) => c.email === correo);
+    if (!cuenta) return { ok: false, motivo: 'No hay cuenta con ese correo.' };
+    await this._fijarClave(cuenta, claveNueva);
+    escribirMapa(CLAVE_RECUPERACION, {});
+    return { ok: true };
+  },
+
+  /**
+   * Fija la contraseña de una cuenta (solo hash). Las cuentas demo no se
+   * persisten con `guardar()`, así que su hash propio va en un mapa aparte
+   * para que el cambio sobreviva a la recarga de la página.
+   */
+  async _fijarClave(cuenta, clave) {
+    const hash = await hashClave(String(clave));
+    cuenta.claveHash = hash;
+    if (cuenta.demo) {
+      escribirMapa(CLAVE_DEMO_ALMACEN, {
+        ...leerMapa(CLAVE_DEMO_ALMACEN),
+        [cuenta.email]: hash
+      });
+    } else {
+      guardar();
+    }
   }
 };
 
@@ -192,6 +363,9 @@ export const CuentasRepository = {
  * daba por perdida porque la cuenta aún no estaba en memoria.
  */
 export const cuentasListas = (async () => {
-  for (const demo of CUENTAS) demo.claveHash = await hashClave(CLAVE_DEMO);
+  const clavesPropias = leerMapa(CLAVE_DEMO_ALMACEN);
+  for (const demo of CUENTAS) {
+    demo.claveHash = clavesPropias[demo.email] || (await hashClave(CLAVE_DEMO));
+  }
   await hidratar();
 })();

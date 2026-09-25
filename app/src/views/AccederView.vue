@@ -93,6 +93,9 @@ onMounted(() => {
       </div>
     </form>
 
-    <p class="campo-ayuda">¿No tienes cuenta? <RouterLink to="/registro">Crear cuenta</RouterLink></p>
+    <p class="campo-ayuda">
+      ¿No tienes cuenta? <RouterLink to="/registro">Crear cuenta</RouterLink>
+      · <RouterLink to="/recuperar">Olvidé mi contraseña</RouterLink>
+    </p>
   </section>
 </template>

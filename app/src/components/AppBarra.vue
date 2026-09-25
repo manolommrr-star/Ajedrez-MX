@@ -47,12 +47,18 @@ function irA(ruta) {
           class="enlace-top"
           @click="menuAbierto = false"
         >Mi panel</RouterLink>
+        <RouterLink
+          v-if="estado.cuenta"
+          to="/mi-cuenta"
+          class="enlace-top"
+          @click="menuAbierto = false"
+        >Mi cuenta</RouterLink>
         <RouterLink to="/registro" class="enlace-top" @click="menuAbierto = false">Crear cuenta</RouterLink>
       </nav>
 
       <div class="acciones-top">
         <template v-if="estado.cuenta">
-          <span class="perfil-chip" :title="estado.cuenta.email">
+          <span class="perfil-chip">
             <span>{{ esOrganizador ? estado.organizador?.nombre || estado.cuenta.nombre : estado.cuenta.nombre }}</span>
           </span>
           <button type="button" class="boton boton-gris boton-sm" @click="salir">Salir</button>

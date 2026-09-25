@@ -10,6 +10,8 @@ import InscripcionView from '@/views/InscripcionView.vue';
 import MisInscripcionesView from '@/views/MisInscripcionesView.vue';
 import RegistroView from '@/views/RegistroView.vue';
 import AccederView from '@/views/AccederView.vue';
+import MiCuentaView from '@/views/MiCuentaView.vue';
+import RecuperarView from '@/views/RecuperarView.vue';
 import PagarView from '@/views/PagarView.vue';
 import PanelLayout from '@/views/panel/PanelLayout.vue';
 
@@ -21,6 +23,8 @@ const rutas = [
   { path: '/mis-inscripciones', name: 'mis-inscripciones', component: MisInscripcionesView },
   { path: '/registro', name: 'registro', component: RegistroView },
   { path: '/acceder', name: 'acceder', component: AccederView },
+  { path: '/mi-cuenta', name: 'mi-cuenta', component: MiCuentaView, meta: { requiereSesion: true } },
+  { path: '/recuperar', name: 'recuperar', component: RecuperarView },
 
   /* Panel del organizador: layout con rutas hijas */
   {
@@ -46,11 +50,20 @@ export const router = createRouter({
   scrollBehavior: () => ({ top: 0 })
 });
 
-/** El panel solo es accesible con una cuenta de organizador (Etapa 4). */
+/**
+ * Guardas de ruta: el panel exige organizador y `requiereSesion` acepta
+ * cualquier cuenta (Mi cuenta). Sin sesión → acceder con redirección.
+ */
 router.beforeEach(async (to) => {
-  if (!to.matched.some((r) => r.meta.requiereOrganizador)) return true;
-  const cuenta = await Sesion.getCuenta();
-  if (!cuenta) return { name: 'acceder', query: { redir: to.fullPath } };
-  if (cuenta.rol !== 'organizer') return { name: 'mis-inscripciones' };
+  if (to.matched.some((r) => r.meta.requiereOrganizador)) {
+    const cuenta = await Sesion.getCuenta();
+    if (!cuenta) return { name: 'acceder', query: { redir: to.fullPath } };
+    if (cuenta.rol !== 'organizer') return { name: 'mis-inscripciones' };
+    return true;
+  }
+  if (to.matched.some((r) => r.meta.requiereSesion)) {
+    const cuenta = await Sesion.getCuenta();
+    if (!cuenta) return { name: 'acceder', query: { redir: to.fullPath } };
+  }
   return true;
 });
