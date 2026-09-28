@@ -1,0 +1,19 @@
+{
+  "name": "ajedrezmx-servidor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Servidor Node.js de AjedrezMX: recrea con Express + EJS el comportamiento del frontend Vue, migrado vista a vista.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node tests/smoke/run-all.mjs"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^4.21.2"
+  }
+}

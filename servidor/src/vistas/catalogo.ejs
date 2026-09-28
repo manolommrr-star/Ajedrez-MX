@@ -1,0 +1,104 @@
+<%#
+  Catálogo de torneos (página principal).
+  Equivale a app/src/views/CatalogoView.vue: hero + buscador + filtros y
+  secciones (destacados / cercanos / próximos) o resultados de búsqueda.
+
+  Diferencia con el SPA: los filtros son un formulario GET de verdad
+  (sin JavaScript); el servidor filtra y devuelve la página completa.
+
+  Nota: comentario EJS (no se emite) para que el HTML comience
+  exactamente por el doctype; el guion del cierre recorta el salto
+  de línea siguiente.
+-%>
+<%- include('partials/cabecera') %>
+
+<section class="hero">
+  <h1 class="hero-titulo">Encuentra tu próximo torneo de ajedrez</h1>
+  <p class="hero-subtitulo">Busca, compara e inscríbete en torneos de ajedrez en México.</p>
+
+  <form class="buscador" role="search" method="get" action="/">
+    <div class="buscador-fila">
+      <label class="sr-only" for="busqueda">Buscar torneos por nombre, ciudad o estado</label>
+      <input
+        id="busqueda"
+        name="texto"
+        class="control"
+        type="search"
+        placeholder="Busca por nombre, ciudad o estado…"
+        autocomplete="off"
+        value="<%= filtros.textoTorneo %>"
+      >
+      <button type="submit" class="boton boton-dorado">Buscar</button>
+    </div>
+
+    <div class="filtros-fila">
+      <label class="filtro">
+        <span class="filtro-etiqueta">Ciudad</span>
+        <select name="ciudad" class="control">
+          <option value="">Todas las ciudades</option>
+          <% ciudades.forEach((ciudad) => { %>
+            <option value="<%= ciudad %>" <%= filtros.ciudad === ciudad ? 'selected' : '' %>><%= ciudad %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label class="filtro">
+        <span class="filtro-etiqueta">Modalidad</span>
+        <select name="modalidad" class="control">
+          <option value="">Todas las modalidades</option>
+          <% modalidades.forEach((modalidad) => { %>
+            <option value="<%= modalidad %>" <%= filtros.modalidad === modalidad ? 'selected' : '' %>><%= modalidad %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <a class="boton boton-texto" href="/">Limpiar filtros</a>
+    </div>
+  </form>
+</section>
+
+<section class="contenedor">
+  <% if (hayFiltros) { %>
+    <!-- Resultados de búsqueda -->
+    <h2 class="seccion-titulo">Resultados (<%= resultados.length %>)</h2>
+    <% if (resultados.length === 0) { %>
+      <p class="aviso">No encontramos torneos con esos criterios.</p>
+    <% } else { %>
+      <div class="rejilla-torneos">
+        <% resultados.forEach((torneo) => { %>
+          <%- include('partials/tarjeta', { torneo }) %>
+        <% }) %>
+      </div>
+    <% } %>
+  <% } else { %>
+    <!-- Secciones del inicio -->
+    <% if (secciones.destacados.length > 0) { %>
+      <h2 class="seccion-titulo">Torneos destacados</h2>
+      <div class="rejilla-torneos">
+        <% secciones.destacados.forEach((torneo) => { %>
+          <%- include('partials/tarjeta', { torneo }) %>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (secciones.cercanos.length > 0) { %>
+      <h2 class="seccion-titulo">Torneos cercanos</h2>
+      <div class="rejilla-torneos">
+        <% secciones.cercanos.forEach((torneo) => { %>
+          <%- include('partials/tarjeta', { torneo }) %>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (secciones.proximos.length > 0) { %>
+      <h2 class="seccion-titulo">Próximos torneos</h2>
+      <div class="rejilla-torneos">
+        <% secciones.proximos.forEach((torneo) => { %>
+          <%- include('partials/tarjeta', { torneo }) %>
+        <% }) %>
+      </div>
+    <% } %>
+  <% } %>
+</section>
+
+<%- include('partials/pie') %>

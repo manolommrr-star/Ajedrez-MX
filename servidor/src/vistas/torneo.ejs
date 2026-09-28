@@ -1,0 +1,77 @@
+<%#
+  Detalle de un torneo.
+  Répica server-side de app/src/views/TorneoDetalleView.vue (versión sin
+  sesión: el estado "ya inscrito" llega en la fase 2 con las cuentas).
+  El modelo ya trae características, categorías y precio calculados.
+  Comentario EJS (no se emite) para no encabezar el HTML antes del doctype.
+-%>
+<%- include('partials/cabecera') %>
+
+<section class="contenedor">
+  <a class="enlace-volver" href="/">← Volver al catálogo</a>
+
+  <div class="detalle-banner" style="background-image: <%= torneo.gradiente %>">
+    <div class="detalle-banner-texto">
+      <h1><%= torneo.nombre %></h1>
+      <p><%= torneo.fechaCompleta %> · <%= torneo.hora %> h</p>
+      <p><%= torneo.ciudad %>, <%= torneo.estado %></p>
+    </div>
+  </div>
+
+  <div class="detalle-cuerpo">
+    <div class="detalle-info">
+      <h2 class="detalle-subtitulo">Sobre el torneo</h2>
+      <p class="detalle-descripcion"><%= torneo.descripcion %></p>
+
+      <h2 class="detalle-subtitulo">Características</h2>
+      <dl class="detalle-caracteristicas">
+        <% torneo.caracteristicas.forEach(([clave, valor]) => { %>
+          <dt><%= clave %></dt>
+          <dd><%= valor %></dd>
+        <% }) %>
+      </dl>
+
+      <% if (torneo.organizador) { %>
+        <h2 class="detalle-subtitulo">Organizador</h2>
+        <p class="texto-suave">
+          <%= torneo.organizador.nombre %><% if (torneo.organizador.email) { %> · <%= torneo.organizador.email %><% } %>
+        </p>
+      <% } %>
+
+      <% if (torneo.chessResultsUrl) { %>
+        <h2 class="detalle-subtitulo">Resultados oficiales</h2>
+        <p class="texto-suave">La clasificación y los resultados oficiales se publican en Chess-Results.</p>
+        <a class="boton boton-borde" href="<%= torneo.chessResultsUrl %>" target="_blank" rel="noopener">
+          Ver resultados en Chess-Results
+        </a>
+      <% } %>
+    </div>
+
+    <aside class="detalle-inscripcion">
+      <h2 class="detalle-subtitulo">Inscripciones</h2>
+      <ul class="lista-categorias">
+        <% torneo.categorias.forEach((categoria) => { %>
+          <li class="categoria-fila">
+            <span><%= categoria.nombre %></span>
+            <strong><%= categoria.precio %></strong>
+          </li>
+        <% }) %>
+      </ul>
+
+      <p class="detalle-lugares">
+        <%= torneo.lugaresTexto %><%= torneo.completo ? ' · Completo' : '' %>
+      </p>
+
+      <!-- Botón de inscripción: el formulario llega en la fase 2. -->
+      <% if (torneo.completo) { %>
+        <button type="button" class="boton boton-gris boton-bloque" disabled>Inscribirme</button>
+      <% } else { %>
+        <span class="boton boton-gris boton-bloque" aria-disabled="true">Inscribirme</span>
+      <% } %>
+
+      <p class="detalle-nota">Tu inscripción queda pendiente hasta que el organizador confirme el pago.</p>
+    </aside>
+  </div>
+</section>
+
+<%- include('partials/pie') %>

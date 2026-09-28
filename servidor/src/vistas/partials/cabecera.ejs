@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AjedrezMX — Descubre, compara e inscríbete en torneos de ajedrez en México.">
+  <meta name="theme-color" content="#81b64c">
+  <title><%= tituloPagina %> · AjedrezMX</title>
+  <!-- Mismo CSS que el SPA, servido desde app/src/styles (una sola fuente). -->
+  <link rel="stylesheet" href="/estilos/tema.css">
+  <link rel="stylesheet" href="/estilos/base.css">
+  <link rel="stylesheet" href="/estilos/layout.css">
+  <link rel="stylesheet" href="/estilos/responsive.css">
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body>
+  <div class="pagina">
+    <header class="barra">
+      <div class="barra-interior">
+        <a href="/" class="marca">
+          <span class="marca-simbolo" aria-hidden="true">♞</span>
+          <span class="marca-texto">AjedrezMX</span>
+        </a>
+
+        <!--
+          Navegación pública. Los enlaces de sesión (Mis inscripciones,
+          Mi panel, Mi cuenta, Acceder, Crear cuenta) se agregan en la
+          fase 2 de la migración, cuando existan sus rutas en el servidor.
+        -->
+        <nav class="enlaces-top" aria-label="Navegación principal">
+          <a href="/" class="enlace-top">Torneos</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="contenido">

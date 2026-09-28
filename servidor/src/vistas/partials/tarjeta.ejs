@@ -1,0 +1,41 @@
+<!--
+  Tarjeta de torneo del catálogo.
+  Répica server-side de app/src/components/TarjetaTorneo.vue: recibe un
+  modelo ya calculado por src/modelos.js → aTarjeta() (sin lógica aquí).
+-->
+<article class="tarjeta-torneo">
+  <a
+    class="tarjeta-imagen"
+    style="background-image: <%= torneo.gradiente %>"
+    href="<%= torneo.enlace %>"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    <span class="tarjeta-simbolo">♞</span>
+    <% if (torneo.completo) { %>
+      <span class="etiqueta-flotante etiqueta-completo">Completo</span>
+    <% } else if (torneo.destacado) { %>
+      <span class="etiqueta-flotante etiqueta-destacado">Destacado</span>
+    <% } %>
+  </a>
+
+  <div class="tarjeta-cuerpo">
+    <h3 class="tarjeta-nombre">
+      <a href="<%= torneo.enlace %>"><%= torneo.nombre %></a>
+    </h3>
+
+    <div class="tarjeta-meta">
+      <p><%= torneo.fechaLarga %> · <%= torneo.hora %> h</p>
+      <p><%= torneo.ciudad %>, <%= torneo.estado %></p>
+      <p><%= torneo.modalidad %> · <%= torneo.sistema %> · <%= torneo.rondasTexto %></p>
+    </div>
+
+    <div class="tarjeta-pie">
+      <span>
+        <span class="precio"><%= torneo.precioTexto %></span>
+        <span class="precio-desde"> · <%= torneo.inscritos %>/<%= torneo.cupo %> lugares</span>
+      </span>
+      <a class="boton boton-verde boton-sm" href="<%= torneo.enlace %>">Ver torneo</a>
+    </div>
+  </div>
+</article>

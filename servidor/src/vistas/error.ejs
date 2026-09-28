@@ -1,0 +1,17 @@
+<%#
+  Vista de error (404 y 500). Recibe:
+    tituloPagina — encabezado de la página
+    mensaje      — explicación para la persona visitante
+  Comentario EJS (no se emite) para no encabezar el HTML antes del doctype.
+-%>
+<%- include('partials/cabecera') %>
+
+<section class="contenedor">
+  <div class="tarjeta">
+    <h1 class="titulo-pagina"><%= tituloPagina %></h1>
+    <p class="texto-suave"><%= mensaje %></p>
+    <a class="boton boton-verde" href="/">Volver al catálogo</a>
+  </div>
+</section>
+
+<%- include('partials/pie') %>

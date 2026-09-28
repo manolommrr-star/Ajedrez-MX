@@ -178,6 +178,25 @@ Ajedrez-MX/
   proveedor, estado; escritura solo desde edge function (webhook)
 - `checkins` — asistencia por inscripción (solo organizador)
 
+## Migración a Node.js (carpeta `servidor/`)
+
+Paralelamente al SPA en Vue, existe `servidor/`: una recreación del frontend
+con **Node.js + Express + EJS** (HTML renderizado en el servidor), migrada
+vista a vista. Su primera fase cubre el catálogo y el detalle de torneo;
+reutiliza los datos y repositorios de `app/src` a través de un único archivo
+puente (`servidor/src/puente/torneos.js`), sin duplicar la lógica.
+
+```bash
+cd servidor
+npm install
+npm run dev      # http://localhost:3000
+npm test         # smokes del servidor (29 pruebas)
+```
+
+Detalles, equivalencias con el SPA y plan de fases en
+[`servidor/README.md`](servidor/README.md). El build y el despliegue de
+GitHub Pages no cambian: siguen saliendo de `app/`.
+
 ## Próximas etapas (fuera de este prototipo)
 
 1. Conexión a Supabase: aplicar `supabase/schema.sql`, Auth con roles
