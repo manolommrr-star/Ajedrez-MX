@@ -14,8 +14,8 @@ globalThis.window = {
 };
 
 const base = new URL('../../src/', import.meta.url).href;
-const { CuentasRepository, cuentasListas, perfilOrganizador } =
-  await import(base + 'core/cuentasRepository.js');
+const { CuentasRepository, cuentasListas } = await import(base + 'core/cuentasRepository.js');
+const { OrganizadoresRepository } = await import(base + 'core/organizadoresRepository.js');
 const { PlayersRepository } = await import(base + 'core/playersRepository.js');
 const { RegistrationsRepository } = await import(base + 'core/registrationsRepository.js');
 const { clabeValida, rfcValido, cobroValido } = await import(base + 'utils/validacionesFiscales.js');
@@ -64,36 +64,38 @@ await t('cobroValido detecta cada dato faltante con su motivo', () => {
   return motivos.every((m) => typeof m === 'string' && m.length > 0);
 });
 
-// 2 · Edición de datos de cobro
+// 2 · Edición de datos de cobro (fila propia del organizador)
 const ORG = 'user-demo-organizador';
+const perfilOrg = async () =>
+  OrganizadoresRepository.getPerfil(await CuentasRepository.getPorId(ORG));
 await t('actualizarCobro rechaza correo de MP inválido', async () =>
-  (await CuentasRepository.actualizarCobro(ORG, { mpEmail: 'no-correo' })).ok === false);
+  (await OrganizadoresRepository.actualizarCobro(ORG, { mpEmail: 'no-correo' })).ok === false);
 await t('actualizarCobro rechaza RFC inválido', async () =>
-  (await CuentasRepository.actualizarCobro(ORG, { rfc: 'CORTITO' })).ok === false);
+  (await OrganizadoresRepository.actualizarCobro(ORG, { rfc: 'CORTITO' })).ok === false);
 await t('actualizarCobro rechaza CLABE con DV incorrecto', async () =>
-  (await CuentasRepository.actualizarCobro(ORG, { clabe: '012180000000000658' })).ok === false);
-await t('actualizarCobro guarda y normaliza el RFC a mayúsculas', async () => {
-  const r = await CuentasRepository.actualizarCobro(ORG, {
-    mpEmail: 'mp.nuevo@prueba.mx', rfc: RFC_MORAL, tipoPersona: 'moral',
+  (await OrganizadoresRepository.actualizarCobro(ORG, { clabe: '012180000000000658' })).ok === false);
+await t('actualizarCobro guarda y normaliza RFC (mayúsculas) y correo (minúsculas)', async () => {
+  const r = await OrganizadoresRepository.actualizarCobro(ORG, {
+    mpEmail: 'MP.NUEVO@Prueba.mx', rfc: RFC_MORAL, tipoPersona: 'moral',
     razonSocial: 'Club de Prueba', regimen: '601', cpFiscal: '91000', clabe: CLABE_OK
   });
-  const org = perfilOrganizador(await CuentasRepository.getPorId(ORG));
+  const org = await perfilOrg();
   return r.ok && org.mpEmail === 'mp.nuevo@prueba.mx' && org.rfc === RFC_MORAL
     && org.clabe === CLABE_OK && org.razonSocial === 'Club de Prueba';
 });
 await t('actualizarCobro no toca la organización', async () => {
-  const org = perfilOrganizador(await CuentasRepository.getPorId(ORG));
+  const org = await perfilOrg();
   return org.organizacion === 'Club de Ajedrez Xalapa' && Boolean(org.giro);
 });
 await t('actualizarCobro no aplica a cuentas de jugador', async () =>
-  (await CuentasRepository.actualizarCobro('user-demo-jugador', { cpFiscal: '91000' })).ok === false);
+  (await OrganizadoresRepository.actualizarCobro('user-demo-jugador', { cpFiscal: '91000' })).ok === false);
 await t('conectarMercadoPago deja la cuenta conectada', async () => {
-  const cuenta = await CuentasRepository.getPorId(ORG);
-  cuenta.datosOrganizador = { ...cuenta.datosOrganizador, mpEstado: 'pendiente' };
-  const r = await CuentasRepository.conectarMercadoPago(ORG);
-  return r.ok && perfilOrganizador(await CuentasRepository.getPorId(ORG)).mpEstado === 'conectado';
+  const fila = await OrganizadoresRepository.getPorCuenta(ORG);
+  fila.mpEstado = 'pendiente';
+  const r = await OrganizadoresRepository.conectarMercadoPago(ORG);
+  return r.ok && (await perfilOrg()).mpEstado === 'conectado';
 });
-await t('los datos de cobro de una cuenta propia quedan persistidos sin contraseña', async () => {
+await t('los datos de cobro de una cuenta propia se guardan en la tabla del organizador', async () => {
   // Las cuentas demo no se guardan en localStorage (por diseño): para probar la
   // persistencia se usa una cuenta de organizador creada aquí.
   const alta = await CuentasRepository.registrar({
@@ -105,10 +107,13 @@ await t('los datos de cobro de una cuenta propia quedan persistidos sin contrase
     }
   });
   if (!alta.ok) return 'no se pudo crear la cuenta de prueba';
-  await CuentasRepository.actualizarCobro(alta.cuenta.id, { mpEmail: 'mp.persist2@prueba.mx' });
-  const crudo = mem.get('ajedrezmx-cuentas-demo') || '';
-  return crudo.includes('mp.persist2@prueba.mx') && crudo.includes('orgpersist@prueba.mx')
-    && !crudo.includes('clave1234') && !crudo.includes('mp.persist2@prueba.mx".:1234');
+  await OrganizadoresRepository.actualizarCobro(alta.cuenta.id, { mpEmail: 'mp.persist2@prueba.mx' });
+  const filas = mem.get('ajedrezmx-organizadores-demo') || '';
+  const cuentas = mem.get('ajedrezmx-cuentas-demo') || '';
+  return filas.includes('mp.persist2@prueba.mx') && filas.includes('Org Persist')
+    && cuentas.includes('orgpersist@prueba.mx')
+    && !filas.includes('clave1234') && !cuentas.includes('clave1234')
+    && !cuentas.includes('datosOrganizador');
 });
 
 // 3 · playerId estable (rehidratación)

@@ -10,6 +10,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { CuentasRepository } from '@/core/cuentasRepository.js';
+import { OrganizadoresRepository } from '@/core/organizadoresRepository.js';
 import { DatosCuenta } from '@/core/datosCuenta.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
@@ -117,15 +118,15 @@ async function guardarPerfil() {
   notificar('Perfil de jugador guardado.');
 }
 
-/** Organización del organizador (antes en CobrosView). */
+/**
+ * Organización del organizador (antes en CobrosView): las reglas son las mismas
+ * del paso 2 del registro y viven en core/organizadoresRepository.js.
+ */
 async function guardarOrganizacion() {
-  if (!String(orgF.organizacion).trim()) { notificar('Escribe el nombre de la organización.'); return; }
-  if (!/^\d{10}$/.test(String(orgF.telefono || ''))) { notificar('El celular debe tener 10 dígitos.'); return; }
+  const motivo = OrganizadoresRepository.validarPasoOrganizacion(orgF);
+  if (motivo) { notificar(motivo); return; }
   guardando.value = 'organizacion';
-  const r = await CuentasRepository.actualizar(estado.cuenta.id, {
-    organizacion: orgF.organizacion.trim(),
-    datosOrganizador: { ...orgF }
-  });
+  const r = await OrganizadoresRepository.actualizarOrganizacion(estado.cuenta.id, { ...orgF });
   guardando.value = '';
   if (!r.ok) { notificar(r.motivo); return; }
   await refrescarSesion();

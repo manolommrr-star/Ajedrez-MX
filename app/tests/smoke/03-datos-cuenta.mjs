@@ -14,8 +14,8 @@ globalThis.window = {
 };
 
 const base = new URL('../../src/', import.meta.url).href;
-const { CuentasRepository, cuentasListas, perfilOrganizador } =
-  await import(base + 'core/cuentasRepository.js');
+const { CuentasRepository, cuentasListas } = await import(base + 'core/cuentasRepository.js');
+const { OrganizadoresRepository } = await import(base + 'core/organizadoresRepository.js');
 const { DatosCuenta } = await import(base + 'core/datosCuenta.js');
 const { Sesion } = await import(base + 'core/sesion.js');
 const { PlayersRepository } = await import(base + 'core/playersRepository.js');
@@ -55,11 +55,14 @@ await t('la cuenta demo del organizador trae fecha de ejemplo', async () => {
   const demo = await CuentasRepository.getDemo('organizer');
   return !Number.isNaN(Date.parse(demo.fechaAceptacion));
 });
-await t('el perfil del organizador se arma igual en sesión y en núcleo', async () => {
+await t('el perfil del organizador sale del módulo del organizador', async () => {
   await Sesion.iniciar('user-demo-organizador');
   const desdeSesion = await Sesion.getOrganizador();
-  const desdeNucleo = perfilOrganizador(await CuentasRepository.getPorId('user-demo-organizador'));
-  return JSON.stringify(desdeSesion) === JSON.stringify(desdeNucleo);
+  const desdeNucleo = await OrganizadoresRepository.getPerfil(
+    await CuentasRepository.getPorId('user-demo-organizador')
+  );
+  return JSON.stringify(desdeSesion) === JSON.stringify(desdeNucleo)
+    && desdeSesion.id === 'org-demo' && desdeSesion.email === 'contacto@ajedrezxalapa.mx';
 });
 
 // 2 · Exportación de datos
@@ -111,7 +114,7 @@ await t('las inscripciones del jugador se conservan como registro', async () => 
   const despues = await RegistrationsRepository.getPorJugador('j1');
   return antes.length === despues.length && despues.length > 0;
 });
-await t('eliminar la cuenta demo limpia su hash guardado', async () => {
+await t('eliminar la cuenta demo limpia su hash y su fila de organizador', async () => {
   await CuentasRepository.cambiarClave({
     id: 'user-demo-organizador', claveActual: 'demo1234', claveNueva: 'orgclave77'
   });
@@ -121,8 +124,9 @@ await t('eliminar la cuenta demo limpia su hash guardado', async () => {
     id: 'user-demo-organizador', claveActual: undefined, clave: 'orgclave77'
   });
   const despues = JSON.parse(mem.get('ajedrezmx-claves-demo') || '{}');
+  const fila = await OrganizadoresRepository.getPorCuenta('user-demo-organizador');
   return r.ok && despues['contacto@ajedrezxalapa.mx'] === undefined
-    && (await CuentasRepository.getDemo('organizer')) === null;
+    && (await CuentasRepository.getDemo('organizer')) === null && fila === null;
 });
 await t('las cuentas eliminadas desaparecen del almacenamiento', () => {
   const crudo = mem.get('ajedrezmx-cuentas-demo') || '';

@@ -5,12 +5,15 @@
  * hash de contraseña y rol (player | organizer). Las cuentas creadas en la
  * demo se conservan en localStorage del navegador (solo el hash, nunca la
  * contraseña); al recargar se restauran y se vuelve a enlazar el perfil.
+ *
+ * Los datos del usuario organizador NO viven aquí: se delegan en
+ * core/organizadoresRepository.js (tabla organizations, 1:1 con la cuenta),
+ * que es el archivo único de esa lógica y el primero a probar con Supabase.
  */
 import { PlayersRepository } from './playersRepository.js';
+import { OrganizadoresRepository } from './organizadoresRepository.js';
 import { generarId } from '../utils/ids.js';
 import { esCorreo, claveAceptable } from '../utils/validacionesCuenta.js';
-import { cobroValido } from '../utils/validacionesFiscales.js';
-import { ORGANIZADOR_DEMO } from '../data/mockRelacional.js';
 
 const CLAVE_ALMACEN = 'ajedrezmx-cuentas-demo';
 const CLAVE_DEMO = 'demo1234';
@@ -24,13 +27,6 @@ const BLOQUEO_MINUTOS = 10;
 /* Recuperación: intentos por código y reenvíos permitidos en la misma ventana. */
 const MAX_INTENTOS_CODIGO = 5;
 const MAX_PEDIDOS_CODIGO = 3;
-
-/**
- * Datos de cuenta y cobro de la cuenta de prueba de organizador.
- * Se toman de ORGANIZADOR_DEMO (fuente única) descartando el perfil base
- * (id/nombre/email), que vive en la cuenta y no dentro de los datos.
- */
-const { id: _orgId, nombre: _orgNombre, email: _orgEmail, ...datosOrganizadorDemo } = ORGANIZADOR_DEMO;
 
 /** Hash demo de la contraseña (SHA-256; respaldo simple si no hay crypto). */
 async function hashClave(clave) {
@@ -68,14 +64,12 @@ const CUENTAS = [
     rol: 'organizer',
     nombre: 'Club de Ajedrez Xalapa',
     email: 'contacto@ajedrezxalapa.mx',
-    organizadorId: 'org-demo',
-    organizacion: 'Club de Ajedrez Xalapa',
     correoVerificado: true,
     // Fecha de ejemplo: en la demo los términos se "aceptaron" al instalarse.
     fechaAceptacion: '2026-01-02T18:00:00.000Z',
-    demo: true,
-    // Datos de prueba del panel de cobros (misma forma que el registro).
-    datosOrganizador: { ...datosOrganizadorDemo }
+    demo: true
+    // Su organización y sus datos de cobro viven en la fila semilla 'org-demo'
+    // de core/organizadoresRepository.js, no dentro de la cuenta.
   }
 ];
 
@@ -86,7 +80,10 @@ function guardar() {
   } catch { /* demo: sin localStorage disponible */ }
 }
 
-/** Restaura cuentas guardadas y vuelve a crear su perfil de jugador si falta. */
+/**
+ * Restaura cuentas guardadas, recrea el perfil de jugador si falta y traspasa
+ * al organizador a su tabla (organizadoresRepository).
+ */
 async function hidratar() {
   let guardadas = [];
   try {
@@ -104,6 +101,13 @@ async function hidratar() {
         ...(cuenta.datosJugador || {})
       });
       cuenta.playerId = jugador.id;
+    } else if (cuenta.rol === 'organizer') {
+      // Migración del modelo anterior: la organización y los datos de cobro
+      // vivían DENTRO de la cuenta; ahora son su propia fila.
+      await OrganizadoresRepository.migrarDeCuenta(cuenta);
+      delete cuenta.organizacion;
+      delete cuenta.organizadorId;
+      delete cuenta.datosOrganizador;
     }
     CUENTAS.push(cuenta);
   }
@@ -166,21 +170,11 @@ function registrarIntentoFallido(cuenta) {
   return MAX_INTENTOS - cuenta.intentosFallidos;
 }
 
-/**
- * Perfil de organizador derivado de la cuenta.
- * Fuente única: lo usan la sesión y la exportación de datos, para que no se
- * arme de dos formas distintas.
+/*
+ * El perfil del organizador (`perfilOrganizador`) se movió a
+ * OrganizadoresRepository.getPerfil(cuenta): una sola fuente para la sesión,
+ * la exportación de datos y el panel.
  */
-export function perfilOrganizador(cuenta) {
-  if (!cuenta || cuenta.rol !== 'organizer' || !cuenta.organizadorId) return null;
-  return {
-    id: cuenta.organizadorId,
-    nombre: cuenta.organizacion || cuenta.nombre,
-    email: cuenta.email,
-    ...(cuenta.datosOrganizador || {})
-  };
-}
-
 export const CuentasRepository = {
   /**
    * Registra una cuenta con rol (demo).
@@ -221,28 +215,19 @@ export const CuentasRepository = {
       const jugador = await PlayersRepository.crearJugador(cuenta.datosJugador);
       cuenta.playerId = jugador.id;
     } else {
-      cuenta.organizacion = String(extras.organizacion || cuenta.nombre).trim();
-      cuenta.organizadorId = generarId('org');
-      cuenta.datosOrganizador = {
-        organizacion: cuenta.organizacion,
-        giro: extras.giro || 'Club o academia',
-        telefono: String(extras.telefono || '').trim(),
-        ciudad: String(extras.ciudad || '').trim(),
-        estado: String(extras.estado || '').trim(),
-        web: String(extras.web || '').trim(),
-        mpEmail: String(extras.mpEmail || correo).trim().toLowerCase(),
-        tipoPersona: extras.tipoPersona || 'fisica',
-        rfc: String(extras.rfc || '').trim().toUpperCase(),
-        razonSocial: String(extras.razonSocial || '').trim(),
-        regimen: String(extras.regimen || '605').trim(),
-        cpFiscal: String(extras.cpFiscal || '').trim(),
-        clabe: String(extras.clabe || '').trim(),
-        mpEstado: extras.mpEstado || 'conectado'
-      };
       // Base legal: la vista exige aceptar términos antes de crear la cuenta
       // (el jugador no los pide hoy) y se guarda la fecha de aceptación.
       cuenta.aceptaTerminos = Boolean(extras.aceptaTerminos);
       cuenta.fechaAceptacion = cuenta.aceptaTerminos ? new Date().toISOString() : null;
+      // El perfil del organizador vive en su propio módulo (tabla aparte). Si el
+      // alta falla, la cuenta no se crea: nunca queda un usuario a medias.
+      const altaOrganizador = await OrganizadoresRepository.crear({
+        cuentaId: cuenta.id,
+        nombre: cuenta.nombre,
+        email: correo,
+        datos: extras
+      });
+      if (!altaOrganizador.ok) return { ok: false, motivo: altaOrganizador.motivo };
     }
 
     CUENTAS.push(cuenta);
@@ -288,48 +273,11 @@ export const CuentasRepository = {
     return { ok: true, cuenta };
   },
 
-  /**
-   * Actualiza los datos de cobro del organizador (Mercado Pago y fiscales).
-   * Contraparte de actualizar() para los campos que solo usa "Cobros y cuenta";
-   * valida con las mismas reglas del registro (validacionesFiscales).
+  /*
+   * Los datos de cobro del organizador (Mercado Pago y fiscales) ya no se
+   * editan aquí: viven en OrganizadoresRepository.actualizarCobro() y
+   * OrganizadoresRepository.conectarMercadoPago().
    */
-  async actualizarCobro(id, cambios = {}) {
-    await cuentasListas;
-    const cuenta = CUENTAS.find((c) => c.id === id);
-    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
-    if (cuenta.rol !== 'organizer') {
-      return { ok: false, motivo: 'Solo las cuentas de organizador tienen datos de cobro.' };
-    }
-    const datos = { ...(cuenta.datosOrganizador || {}), ...soloDefinidos(cambios) };
-    const motivo = cobroValido({ ...datos, email: datos.mpEmail || cuenta.email });
-    if (motivo) return { ok: false, motivo };
-    datos.rfc = String(datos.rfc).trim().toUpperCase();
-    cuenta.datosOrganizador = datos;
-    guardar();
-    return { ok: true, datos };
-  },
-
-  /**
-   * Marca la cuenta de Mercado Pago como conectada.
-   * Demo: simula el OAuth Authorization Code; en producción el token lo
-   * devuelve el backend y se guarda la conexión, no la tarjeta.
-   */
-  async conectarMercadoPago(id) {
-    await cuentasListas;
-    const cuenta = CUENTAS.find((c) => c.id === id);
-    if (!cuenta) return { ok: false, motivo: 'La cuenta ya no existe.' };
-    if (cuenta.rol !== 'organizer') {
-      return { ok: false, motivo: 'Solo las cuentas de organizador tienen datos de cobro.' };
-    }
-    const mpEmail = String(cuenta.datosOrganizador?.mpEmail || cuenta.email).trim();
-    if (!esCorreo(mpEmail)) {
-      return { ok: false, motivo: 'Escribe un correo válido para tu cuenta de Mercado Pago.' };
-    }
-    const datos = { ...cuenta.datosOrganizador, mpEmail, mpEstado: 'conectado' };
-    cuenta.datosOrganizador = datos;
-    guardar();
-    return { ok: true, datos };
-  },
 
   /**
    * Marca el correo de la cuenta como verificado.
@@ -349,8 +297,8 @@ export const CuentasRepository = {
    * Elimina la cuenta tras validar la contraseña (derecho de supresión).
    *
    * El perfil de jugador se anonimiza en vez de borrarse y las inscripciones y
-   * pagos se conservan: son registros de cobro. Los torneos publicados por un
-   * organizador tampoco se borran.
+   * pagos se conservan: son registros de cobro. El organizador pierde su fila
+   * (organización y cobro) y sus torneos publicados tampoco se borran.
    */
   async eliminarCuenta({ id, clave }) {
     await cuentasListas;
@@ -361,6 +309,8 @@ export const CuentasRepository = {
 
     if (cuenta.rol === 'player' && cuenta.playerId) {
       await PlayersRepository.anonimizar(cuenta.playerId);
+    } else if (cuenta.rol === 'organizer') {
+      await OrganizadoresRepository.eliminarDe(cuenta.id);
     }
     CUENTAS.splice(CUENTAS.indexOf(cuenta), 1);
     guardar();
@@ -399,8 +349,8 @@ export const CuentasRepository = {
    * - Validaciones compartidas: correo único y válida, nombre obligatorio.
    * - Rol player: espeja nombre/apellidos/email al perfil de jugador
    *   (PlayersRepository) y mantiene datosJugador para restaurar la sesión.
-   * - Rol organizer: mantiene organizacion y datosOrganizador sincronizados
-   *   (Sesion.getOrganizador se arma de aquí, sin duplicados).
+   * - Rol organizer: la ficha de la organización se edita aparte, en
+   *   OrganizadoresRepository.actualizarOrganizacion().
    */
   async actualizar(id, cambios = {}) {
     await cuentasListas;
@@ -438,24 +388,9 @@ export const CuentasRepository = {
       if (cuenta.playerId) {
         await PlayersRepository.actualizar(cuenta.playerId, cuenta.datosJugador);
       }
-    } else {
-      if (cambios.datosOrganizador) {
-        cuenta.datosOrganizador = {
-          ...cuenta.datosOrganizador,
-          ...soloDefinidos(cambios.datosOrganizador)
-        };
-        if (cuenta.datosOrganizador.organizacion) {
-          cuenta.organizacion = String(cuenta.datosOrganizador.organizacion).trim();
-        }
-      }
-      if (cambios.organizacion !== undefined) {
-        cuenta.organizacion = String(cambios.organizacion || '').trim();
-        cuenta.datosOrganizador = {
-          ...cuenta.datosOrganizador,
-          organizacion: cuenta.organizacion
-        };
-      }
     }
+    // La organización del organizador se edita con
+    // OrganizadoresRepository.actualizarOrganizacion(): aquí no se toca.
 
     guardar();
     return { ok: true, cuenta };

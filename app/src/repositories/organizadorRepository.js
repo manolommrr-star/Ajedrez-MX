@@ -4,17 +4,25 @@
  * Capa única que usa el panel. Ahora es ASÍNCRONA y delega el dominio
  * en core/; cuando se conecte Supabase solo cambiará el origen
  * de datos interno de cada repositorio de core, no esta interfaz.
+ *
+ * El perfil del organizador (identidad, organización y cobro) sale de
+ * core/organizadoresRepository.js; aquí solo se arma el panel de trabajo
+ * (torneos, eventos, inscripciones y pagos del organizador activo).
  */
-import { ORGANIZADOR_DEMO, TORNEOS_DEMO } from '../data/mockRelacional.js';
+import { TORNEOS_DEMO } from '../data/mockRelacional.js';
 import { EventsRepository } from '../core/eventsRepository.js';
 import { RegistrationsRepository } from '../core/registrationsRepository.js';
 import { PaymentsRepository } from '../core/paymentsRepository.js';
 import { Sesion } from '../core/sesion.js';
+import { OrganizadoresRepository } from '../core/organizadoresRepository.js';
 
 export const OrganizadorRepository = {
-  /** Organizador activo: la cuenta con sesión (rol organizer) o el club demo. */
+  /**
+   * Organizador activo: la cuenta con sesión (rol organizer) o, en el panel de
+   * la demo sin sesión, el club de prueba (la misma fila semilla de core/).
+   */
   async getPerfil() {
-    return (await Sesion.getOrganizador()) || ORGANIZADOR_DEMO;
+    return (await Sesion.getOrganizador()) || OrganizadoresRepository.getPerfilDemo();
   },
 
   async getEventos() {

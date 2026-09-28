@@ -6,8 +6,9 @@
  * terceros. La cuenta es la fuente: el perfil de jugador u organización se
  * derivan de ella, igual que en la sesión.
  */
-import { CuentasRepository, cuentasListas, perfilOrganizador } from './cuentasRepository.js';
+import { CuentasRepository, cuentasListas } from './cuentasRepository.js';
 import { PlayersRepository } from './playersRepository.js';
+import { OrganizadoresRepository } from './organizadoresRepository.js';
 import { RegistrationsRepository } from './registrationsRepository.js';
 import { PaymentsRepository } from './paymentsRepository.js';
 
@@ -56,7 +57,8 @@ export const DatosCuenta = {
         datos.inscripciones.map((r) => PaymentsRepository.getPorInscripcion(r.id))
       )).filter(Boolean);
     } else {
-      datos.organizacion = perfilOrganizador(cuenta);
+      // La organización sale de su propio módulo, la misma fuente que la sesión.
+      datos.organizacion = await OrganizadoresRepository.getPerfil(cuenta);
     }
 
     return datos;

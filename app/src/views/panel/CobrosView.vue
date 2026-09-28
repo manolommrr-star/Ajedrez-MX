@@ -3,18 +3,18 @@
  * Cobros y cuenta (panel del organizador).
  *
  * ÚNICA vista que edita los datos de cobro de Mercado Pago y los fiscales
- * (la organización se edita en "Mi cuenta"). Valida con las mismas reglas
- * que el registro (utils/validacionesFiscales): no hay dos criterios.
+ * (la organización se edita en "Mi cuenta"). Toda la lógica vive en
+ * core/organizadoresRepository.js, que valida con las mismas reglas del
+ * registro: no hay dos criterios.
  * En producción la verificación de identidad vive en Mercado Pago.
  */
 import { computed, onMounted, reactive, ref } from 'vue';
-import { OrganizadorRepository } from '@/repositories/organizadorRepository.js';
-import { CuentasRepository } from '@/core/cuentasRepository.js';
+import { OrganizadoresRepository } from '@/core/organizadoresRepository.js';
 import { REGIMENES } from '@/data/catalogoFiscal.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 
-const { estado, refrescarSesion } = useSesion();
+const { estado, asegurarSesion, refrescarSesion } = useSesion();
 
 const perfil = ref(null);
 const cargando = ref(true);
@@ -29,6 +29,9 @@ const cobro = reactive({
 
 const conectado = computed(() => perfil.value?.mpEstado === 'conectado');
 
+/** Correo de Mercado Pago que se muestra en el estado de la conexión. */
+const mpEmail = computed(() => perfil.value?.mpEmail || estado.cuenta?.email || '');
+
 /** Vuelca el perfil del organizador en el formulario. */
 function cargar() {
   const p = perfil.value || {};
@@ -42,12 +45,15 @@ function cargar() {
 }
 
 async function recargar() {
-  perfil.value = await OrganizadorRepository.getPerfil();
+  perfil.value = await OrganizadoresRepository.getPerfil(estado.cuenta);
   cargar();
 }
 
 onMounted(async () => {
   try {
+    // Los hijos montan antes que el layout: sin esto, entrar directo a
+    // /panel/cobros tras recargar vería la sesión todavía sin leer.
+    await asegurarSesion();
     await recargar();
   } finally {
     cargando.value = false;
@@ -57,7 +63,7 @@ onMounted(async () => {
 /** Guarda los datos de cobro (validación fiscal compartida con el registro). */
 async function guardarCobro() {
   guardando.value = true;
-  const r = await CuentasRepository.actualizarCobro(estado.cuenta?.id, { ...cobro });
+  const r = await OrganizadoresRepository.actualizarCobro(estado.cuenta?.id, { ...cobro });
   guardando.value = false;
   if (!r.ok) { notificar(r.motivo); return; }
   await refrescarSesion();
@@ -68,7 +74,7 @@ async function guardarCobro() {
 /** Conecta (o reconecta) la cuenta de Mercado Pago (demo del OAuth). */
 async function conectar() {
   guardando.value = true;
-  const r = await CuentasRepository.conectarMercadoPago(estado.cuenta?.id);
+  const r = await OrganizadoresRepository.conectarMercadoPago(estado.cuenta?.id);
   guardando.value = false;
   if (!r.ok) { notificar(r.motivo); return; }
   await refrescarSesion();

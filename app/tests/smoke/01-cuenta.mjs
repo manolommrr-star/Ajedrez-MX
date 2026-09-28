@@ -15,6 +15,7 @@ globalThis.window = {
 
 const base = new URL('../../src/', import.meta.url).href;
 const { CuentasRepository, cuentasListas } = await import(base + 'core/cuentasRepository.js');
+const { OrganizadoresRepository } = await import(base + 'core/organizadoresRepository.js');
 const { PlayersRepository } = await import(base + 'core/playersRepository.js');
 const { Sesion } = await import(base + 'core/sesion.js');
 const { esCorreo, claveAceptable } = await import(base + 'utils/validacionesCuenta.js');
@@ -125,16 +126,21 @@ await t('restablecerClave ok deja entrar con la nueva', async () => {
 await t('el código de un solo uso se borra tras usarse', () =>
   (mem.get('ajedrezmx-recuperacion') || '{}') === '{}');
 
-// 9 · Organización del organizador
+// 9 · Organización del organizador (tabla propia, no dentro de la cuenta)
 await t('actualizar organización se refleja en getOrganizador', async () => {
-  const r = await CuentasRepository.actualizar('user-demo-organizador', {
+  const r = await OrganizadoresRepository.actualizarOrganizacion('user-demo-organizador', {
     organizacion: 'Club Nuevo Xalapa',
-    datosOrganizador: { giro: 'Escuela', telefono: '5511111111', ciudad: 'Xalapa', estado: 'Veracruz' }
+    giro: 'Escuela', telefono: '5511111111', ciudad: 'Xalapa', estado: 'Veracruz'
   });
   await Sesion.iniciar('user-demo-organizador');
   const org = await Sesion.getOrganizador();
   return r.ok && org.nombre === 'Club Nuevo Xalapa' && org.organizacion === 'Club Nuevo Xalapa'
     && org.giro === 'Escuela' && org.ciudad === 'Xalapa';
+});
+await t('la organización ya no se guarda dentro de la cuenta', async () => {
+  const cuenta = await CuentasRepository.getPorId('user-demo-organizador');
+  return cuenta.organizacion === undefined && cuenta.datosOrganizador === undefined
+    && cuenta.organizadorId === undefined;
 });
 await t('los datos fiscales no se tocan al editar la organización', async () => {
   const org = await Sesion.getOrganizador();

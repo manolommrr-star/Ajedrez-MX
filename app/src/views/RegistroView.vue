@@ -9,16 +9,18 @@
  * dentro de Mercado Pago.
  *
  * Crea la cuenta demo (mock de auth.users + profiles) e inicia sesión.
+ *
+ * Las reglas de los 3 pasos viven en core/organizadoresRepository.js (fuente
+ * única del usuario organizador); aquí solo se decide en qué paso está el error.
  */
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { CuentasRepository } from '@/core/cuentasRepository.js';
+import { OrganizadoresRepository } from '@/core/organizadoresRepository.js';
 import { useSesion } from '@/composables/useSesion.js';
 import { notificar } from '@/composables/useAviso.js';
 import { REGIMENES } from '@/data/catalogoFiscal.js';
 import { GIROS, ESTADOS_MX } from '@/data/catalogosCuenta.js';
-import { esCorreo, claveAceptable } from '@/utils/validacionesCuenta.js';
-import { cobroValido } from '@/utils/validacionesFiscales.js';
 
 const router = useRouter();
 const { iniciarSesion } = useSesion();
@@ -44,24 +46,19 @@ watch(esOrganizador, (ahora) => { if (!ahora) paso.value = 1; });
 
 const enviando = ref(false);
 
+/*
+ * Las reglas de cada paso viven en core/organizadoresRepository.js (fuente
+ * única: la misma que usan "Mi cuenta" y "Cobros y cuenta"), no aquí.
+ */
+
 /** Paso 1 · Cuenta: acceso básico compartido con jugador. Devuelve motivo o ''. */
 function validarCuenta() {
-  if (!String(datos.nombre).trim()) return 'Escribe tu nombre.';
-  if (!esCorreo(datos.email)) return 'Escribe un correo válido.';
-  const motivoClave = claveAceptable(datos.clave);
-  if (motivoClave) return motivoClave;
-  if (datos.clave !== datos.confirmar) return 'Las contraseñas no coinciden.';
-  if (esOrganizador.value && !datos.aceptaTerminos) {
-    return 'Debes aceptar los términos y el aviso de privacidad.';
-  }
-  return '';
+  return OrganizadoresRepository.validarPasoCuenta(datos);
 }
 
 /** Paso 2 · Organización. Devuelve motivo o ''. */
 function validarOrganizacion() {
-  if (!datos.organizacion.trim()) return 'Escribe el nombre de la organización.';
-  if (!/^\d{10}$/.test(datos.telefono.trim())) return 'El celular debe tener 10 dígitos.';
-  return '';
+  return OrganizadoresRepository.validarPasoOrganizacion(datos);
 }
 
 function siguiente() {
@@ -75,21 +72,24 @@ function siguiente() {
 }
 
 async function enviar() {
+  // El módulo del organizador normaliza los campos (recorta el texto, sube el
+  // RFC y baja el correo) y aplica los valores por defecto del esquema: aquí
+  // solo se declara lo que el usuario firma (los términos).
   const extras = esOrganizador.value
     ? {
-        organizacion: datos.organizacion.trim(),
+        organizacion: datos.organizacion,
         giro: datos.giro,
-        telefono: datos.telefono.trim(),
-        ciudad: datos.ciudad.trim(),
+        telefono: datos.telefono,
+        ciudad: datos.ciudad,
         estado: datos.estado,
-        web: datos.web.trim(),
-        mpEmail: datos.mpEmail.trim() || datos.email.trim(),
+        web: datos.web,
+        mpEmail: datos.mpEmail || datos.email,
         tipoPersona: datos.tipoPersona,
-        rfc: datos.rfc.trim().toUpperCase(),
-        razonSocial: datos.razonSocial.trim(),
+        rfc: datos.rfc,
+        razonSocial: datos.razonSocial,
         regimen: datos.regimen,
-        cpFiscal: datos.cpFiscal.trim(),
-        clabe: datos.clabe.trim(),
+        cpFiscal: datos.cpFiscal,
+        clabe: datos.clabe,
         // Demo: "conectar Mercado Pago" simula el OAuth Authorization Code;
         // en producción el access_token lo devuelve el backend.
         mpEstado: 'conectado',
@@ -102,14 +102,12 @@ async function enviar() {
       };
 
   if (esOrganizador.value) {
-    const errores = [
-      { enPaso: 1, motivo: validarCuenta() },
-      { enPaso: 2, motivo: validarOrganizacion() },
-      { enPaso: 3, motivo: cobroValido(datos) }
-    ].filter((e) => e.motivo);
-    if (errores.length) {
-      paso.value = errores[0].enPaso;
-      notificar(errores[0].motivo);
+    // El alta se valida completa antes de crear nada: el módulo devuelve el
+    // primer paso con error y el asistente salta justo a ese paso.
+    const alta = OrganizadoresRepository.validarAlta(datos);
+    if (alta.motivo) {
+      paso.value = alta.enPaso;
+      notificar(alta.motivo);
       return;
     }
   } else {
